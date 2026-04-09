@@ -1,0 +1,2901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Secure Gallery</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3C/defs%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23FF3B30' opacity='0.85' transform='rotate(0 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23FF9500' opacity='0.85' transform='rotate(45 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23FFCC02' opacity='0.85' transform='rotate(90 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%2334C759' opacity='0.85' transform='rotate(135 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%2330B0C7' opacity='0.85' transform='rotate(180 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23007AFF' opacity='0.85' transform='rotate(225 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%235856D6' opacity='0.85' transform='rotate(270 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23AF52DE' opacity='0.85' transform='rotate(315 32 32)'/%3E%3C/svg%3E">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root {
+  --bg: #09090b;
+  --surface: #18181b;
+  --surface2: #27272a;
+  --border: #3f3f46;
+  --text: #f4f4f5;
+  --text2: #a1a1aa;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --header-h: 56px;
+  --radius: 12px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased; }
+button { font-family: var(--font); cursor: pointer; border: none; outline: none; background: none; color: var(--text); transition: all 0.2s ease; }
+input { font-family: var(--font); outline: none; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #52525b; border-radius: 4px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: #71717a; }
+.screen { display: none; height: 100vh; animation: fadeIn 0.3s ease; }
+.screen.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+#loginScreen { flex-direction: column; align-items: center; justify-content: center; gap: 32px; background: radial-gradient(circle at 50% -20%, #1e3a8a33, var(--bg) 70%); }
+#loginScreen h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; text-shadow: var(--shadow-sm); }
+.login-box { background: rgba(24, 24, 27, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 36px 32px; width: 380px; max-width: 90vw; display: flex; flex-direction: column; gap: 18px; box-shadow: var(--shadow-lg); }
+.login-box label { font-size: 13px; color: var(--text2); font-weight: 600; letter-spacing: 0.5px; }
+.login-box input[type="password"] { width: 100%; padding: 12px 16px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 15px; transition: border 0.2s, box-shadow 0.2s; }
+.login-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+.login-box .note { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.btn { padding: 12px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #2563eb); color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); border: 1px solid rgba(255,255,255,0.1); }
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); }
+.btn-secondary { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+#loginError { color: var(--danger); font-size: 13px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); }
+#mainScreen { flex-direction: row; height: 100vh; }
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.content-header { height: var(--header-h); padding: 0 24px; padding-top: env(safe-area-inset-top); display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 10; }
+.header-logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s; }
+.header-logo:hover { opacity: 0.8; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; flex-wrap: nowrap; overflow: hidden; }
+.breadcrumb a { color: var(--text2); text-decoration: none; transition: color 0.2s; }
+.breadcrumb a:hover { color: var(--text); }
+.breadcrumb .sep { color: var(--border); }
+.breadcrumb .current { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.content-header .spacer { flex: 1; }
+.toolbar { padding: 12px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; background: var(--surface); }
+.toolbar .file-count { font-size: 13px; color: var(--text2); font-weight: 500; }
+.toolbar .spacer { flex: 1; }
+.grid-slider { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); }
+.grid-slider label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.grid-slider input[type="range"] { width: 80px; accent-color: var(--accent); height: 4px; border-radius: 2px; }
+.toolbar-btn, .shuffle-btn, .sort-btn, .fav-filter button { padding: 8px 14px; font-size: 13px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; border: 1px solid transparent; }
+.toolbar-btn:hover, .sort-btn:hover { transform: translateY(-1px); }
+.sort-btn .sort-icon { font-weight: 700; font-size: 13px; }
+.sort-btn .sort-arrow { font-size: 11px; opacity: 0.7; }
+.shuffle-btn { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+.shuffle-btn:hover { background: rgba(239, 68, 68, 0.25); }
+.sort-name { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+.sort-size { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+.sort-date { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.2); }
+.fav-filter { display: flex; gap: 6px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 10px; border: 1px solid var(--border); }
+.fav-filter button { padding: 6px 12px; border-radius: 6px; color: var(--text2); background: transparent; border: none; font-weight: 500; }
+.fav-filter button:hover { color: var(--text); }
+.fav-filter button.active { background: var(--surface2); color: var(--text); box-shadow: var(--shadow-sm); }
+.content-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+.gallery-grid { display: grid; gap: 8px; }
+.gallery-item { aspect-ratio: 1; background: var(--surface2); cursor: pointer; overflow: hidden; position: relative; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.gallery-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); z-index: 2; }
+.gallery-item:hover img { transform: scale(1.08); }
+.gallery-item .vid-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); color: #fff; font-size: 10px; padding: 4px 6px; border-radius: 6px; z-index: 2; font-weight: 700; }
+.gallery-item .hover-info { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 30px 12px 10px; opacity: 0; transition: opacity 0.2s ease; z-index: 1; pointer-events: none; }
+.gallery-item:hover .hover-info { opacity: 1; }
+.gallery-item .hover-info .hi-name { font-size: 12px; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.gallery-item .hover-info .hi-size { font-size: 11px; color: rgba(255,255,255,0.7); }
+.gallery-item .loading-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text2); }
+.gallery-item .fav-badge { position: absolute; top: 8px; right: 8px; color: #ff3b5c; font-size: 20px; z-index: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.gallery-item .li-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); color: #fff; font-size: 10px; padding: 4px 8px; border-radius: 6px; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; z-index: 2; border: 1px solid rgba(255,255,255,0.1); }
+.gallery-item .sel-check { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.6); background: rgba(0,0,0,0.3); z-index: 3; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.gallery-item .sel-check:hover { border-color: #fff; background: rgba(255,255,255,0.2); }
+.gallery-item.selected .sel-check { border-color: var(--accent); background: var(--accent); }
+.gallery-item.selected .sel-check::after { content: '✓'; color: #fff; font-size: 14px; font-weight: 800; }
+.gallery-item.selected { outline: 3px solid var(--accent); outline-offset: -1px; transform: scale(0.96); border-radius: calc(var(--radius) - 2px); }
+.batch-actions { display: none; align-items: center; gap: 8px; background: rgba(39, 39, 42, 0.8); backdrop-filter: blur(8px); padding: 6px; border-radius: 10px; border: 1px solid var(--border); }
+.batch-actions.show { display: flex; animation: fadeIn 0.2s ease; }
+.batch-btn { padding: 6px 14px; font-size: 12px; border-radius: 6px; font-weight: 600; font-family: var(--font); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; border: none; }
+.batch-btn.fav-add { background: rgba(255, 59, 92, 0.15); color: #ff3b5c; }
+.batch-btn.fav-add:hover { background: rgba(255, 59, 92, 0.25); }
+.batch-btn.fav-rm { background: rgba(161, 161, 170, 0.15); color: #a1a1aa; }
+.batch-btn.fav-rm:hover { background: rgba(161, 161, 170, 0.25); }
+.batch-btn.del { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.batch-btn.del:hover { background: rgba(239, 68, 68, 0.25); }
+.batch-btn.clear { background: transparent; color: var(--text2); }
+.batch-btn.clear:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.batch-count { font-size: 13px; color: var(--accent); font-weight: 700; margin: 0 8px; }
+.date-sep { grid-column: 1/-1; padding: 24px 0 8px; font-size: 15px; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
+.date-sep svg { color: var(--text2); }
+.scroll-top { position: fixed; bottom: 32px; right: 32px; width: 48px; height: 48px; border-radius: 50%; background: rgba(24, 24, 27, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 200; opacity: 0; transform: translateY(20px); pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: var(--text); box-shadow: var(--shadow-lg); }
+.scroll-top.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.scroll-top:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-3px); }
+.lb-media-wrap { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; touch-action: manipulation; overflow: hidden; }
+.lb-media-wrap img, .lb-media-wrap video { height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5)); }
+.kb-clip { position: absolute; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.lb-media-wrap .kb-clip img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+.lb-media-wrap.ken-burns .kb-clip img { animation: kenburns 10s ease-out forwards; transform-origin: center center; }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.08); } }
+.lb-fav-btn, .lb-goto-btn { position: absolute; top: 16px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); cursor: pointer; z-index: 30; transition: background 0.2s, color 0.2s, transform 0.2s, border-color 0.2s; border: 1px solid rgba(255,255,255,0.1); }
+.lb-fav-btn { left: 16px; }
+.lb-goto-btn { left: 60px; }
+.lb-fav-btn:hover, .lb-goto-btn:hover { background: rgba(0,0,0,0.7); color: #fff; transform: scale(1.1); }
+.lb-fav-btn.active { color: #ff3b5c; background: rgba(255, 59, 92, 0.15); border-color: rgba(255, 59, 92, 0.3); }
+.lb-fav-btn.active:hover { background: rgba(255, 59, 92, 0.3); }
+.lb-heart-anim { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); color: #ff3b5c; pointer-events: none; z-index: 6; opacity: 0; line-height: 0; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+.lb-fav-toast { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); background: rgba(24, 24, 27, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 20px; border-radius: 99px; font-size: 13px; font-weight: 600; z-index: 6; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; box-shadow: var(--shadow-md); }
+.lb-heart-anim.pop { animation: heartPop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; color: #ff3b5c; }
+.lb-heart-anim.unpop { animation: heartUnpop 0.8s ease-out forwards; }
+@keyframes heartPop { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 40% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 60% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+@keyframes heartUnpop { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; color: #ff3b5c; } 100% { transform: translate(-50%, -50%) scale(0); opacity: 0; color: rgba(255,255,255,0.2); } }
+#lbContent.dual .lb-media-wrap { max-width: 75%; }
+#lbContent.triple .lb-media-wrap { max-width: 55%; }
+.lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, 0.95); flex-direction: column; }
+.lightbox.active { display: flex; animation: fadeIn 0.2s ease; }
+.lb-top { height: var(--header-h); display: flex; align-items: center; padding: 0 16px; padding-top: env(safe-area-inset-top); gap: 12px; flex-shrink: 0; background: linear-gradient(rgba(0,0,0,0.8), transparent); z-index: 20; }
+.lb-top .lb-filename { flex: 1; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+.lb-top button { color: rgba(255,255,255,0.8); font-size: 20px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: rgba(255,255,255,0.05); }
+.lb-top button:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.lb-body { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+#lbContent { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; transition: opacity 0.3s ease; }
+#lbContent.fade-out { opacity: 0; }
+#lbContent.dual { gap: 8px; }
+#lbContent.triple { gap: 6px; }
+.lightbox:fullscreen .lb-top, .lightbox:fullscreen .lb-bottom { position: absolute; left: 0; right: 0; z-index: 25; background: transparent; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.lightbox:fullscreen .lb-top { top: 0; }
+.lightbox:fullscreen .lb-bottom { bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); }
+.lightbox:fullscreen .lb-top.edge-show, .lightbox:fullscreen .lb-bottom.edge-show { opacity: 1; pointer-events: auto; }
+.lightbox:fullscreen .lb-top button { background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); }
+.lightbox:fullscreen .lb-body { position: absolute; inset: 0; }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 24px; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 20; box-shadow: var(--shadow-md); }
+.lb-nav:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.1); }
+.lb-nav.prev { left: 24px; }
+.lb-nav.next { right: 24px; }
+.lightbox:fullscreen .lb-nav { opacity: 0; pointer-events: none; }
+.lightbox:fullscreen .lb-nav.edge-hover { opacity: 1; pointer-events: auto; }
+.lb-hud { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(24, 24, 27, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 24px 40px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 30; box-shadow: var(--shadow-lg); }
+.lb-hud.show { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+.lb-hud .hud-icon { font-size: 36px; margin-bottom: 8px; color: #fff; }
+.lb-hud .hud-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.lb-hud .hud-sub { font-size: 13px; color: rgba(255,255,255,0.6); }
+.lb-bottom { height: var(--header-h); display: flex; align-items: center; justify-content: center; gap: 20px; flex-shrink: 0; padding: 0 16px; position: relative; background: linear-gradient(transparent, rgba(0,0,0,0.8)); z-index: 20; }
+.lb-bottom button { color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; background: rgba(255,255,255,0.05); transition: all 0.2s; }
+.lb-bottom button:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.lb-bottom button.active { color: var(--accent); background: rgba(59, 130, 246, 0.15); }
+.lb-bottom .lb-counter { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+.lb-view-btn { padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; opacity: 0.5; background: transparent; }
+.lb-view-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+.lb-view-btn.active { opacity: 1; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 1px 1px rgba(0,0,0,0.2); }
+.ss-panel { display: none; position: absolute; bottom: calc(var(--header-h) + 12px); left: 50%; transform: translateX(-50%) translateY(10px); background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; z-index: 30; min-width: 240px; box-shadow: var(--shadow-lg); opacity: 0; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.ss-panel.open { display: block; opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+.ss-panel h4 { font-size: 15px; color: #fff; margin-bottom: 16px; font-weight: 700; }
+.ss-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ss-row label { font-size: 14px; color: rgba(255,255,255,0.7); width: 44px; flex-shrink: 0; }
+.ss-row select { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 8px 12px; font-size: 14px; outline: none; cursor: pointer; }
+.ss-row select:focus { border-color: var(--accent); }
+.toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 24px; border-radius: 99px; font-size: 14px; font-weight: 600; z-index: 2000; opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; box-shadow: var(--shadow-md); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; margin: auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); gap: 12px; padding: 80px 20px; text-align: center; font-size: 15px; }
+.lucky-section { margin-bottom: 32px; }
+.lucky-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.lucky-title button { font-size: 13px; color: var(--text); background: rgba(255,255,255,0.05); padding: 6px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+.lucky-title button:hover { background: rgba(255,255,255,0.1); }
+.lucky-label { font-size: 14px; color: var(--text); font-weight: 600; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+.lucky-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.lucky-item { aspect-ratio: 1; background: var(--surface2); border-radius: var(--radius); overflow: hidden; cursor: pointer; position: relative; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+.lucky-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.lucky-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); z-index: 2; }
+.lucky-item:hover img { transform: scale(1.08); }
+.lucky-item .li-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); color: #fff; font-size: 10px; padding: 4px 8px; border-radius: 6px; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid rgba(255,255,255,0.1); }
+.lucky-item .li-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; color: rgba(255,255,255,0.9); text-shadow: 0 4px 12px rgba(0,0,0,0.8); pointer-events: none; }
+.lucky-item .fav-badge { position: absolute; top: 8px; right: 8px; color: #ff3b5c; font-size: 20px; z-index: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.trash-item { opacity: 0.6; filter: grayscale(50%); transition: all 0.2s; }
+.trash-item:hover { opacity: 1; filter: grayscale(0%); }
+.trash-restore { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: rgba(255, 255, 255, 0.95); color: #18181b; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; opacity: 0; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 3; box-shadow: var(--shadow-md); }
+.trash-item:hover .trash-restore { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.trash-restore:hover { background: #fff; transform: translate(-50%, -50%) scale(1.05) !important; }
+.trash-preview-item { opacity: 0.5; filter: grayscale(80%); transition: all 0.2s; }
+.trash-preview-item:hover { opacity: 1; filter: grayscale(0%); }
+@media(max-width: 768px) {
+  :root { --header-h: 52px; }
+  .content-header { padding: 0 16px; }
+  .toolbar { padding: 12px 16px; gap: 8px; }
+  .content-scroll { padding: 16px; }
+  .lb-nav { width: 44px; height: 44px; font-size: 20px; }
+  .lb-nav.prev { left: 12px; }
+  .lb-nav.next { right: 12px; }
+  .header-logo span { display: none; }
+  .login-box { padding: 28px 20px; }
+  .gallery-grid { gap: 4px; }
+  .date-sep { font-size: 14px; padding: 16px 0 6px; }
+  .lb-top { background: linear-gradient(rgba(0,0,0,0.9), transparent); }
+  .lb-bottom { background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
+  .ss-panel, .lb-hud, .scroll-top, .toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(24, 24, 27, 0.98); }
+  .lb-nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.6); }
+  .lb-fav-toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.75); }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen" class="screen active">
+  <h1><svg class="app-logo" width="36" height="36" viewBox="0 0 64 64" style="vertical-align:middle;margin-right:8px"><ellipse cx="32" cy="18" rx="8" ry="14" fill="#FF3B30" opacity="0.85" transform="rotate(0 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#FF9500" opacity="0.85" transform="rotate(45 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#FFCC02" opacity="0.85" transform="rotate(90 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#34C759" opacity="0.85" transform="rotate(135 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#30B0C7" opacity="0.85" transform="rotate(180 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#007AFF" opacity="0.85" transform="rotate(225 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#5856D6" opacity="0.85" transform="rotate(270 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#AF52DE" opacity="0.85" transform="rotate(315 32 32)"/></svg>Secure Gallery</h1>
+  <div class="login-box">
+    <label>암호화 비밀번호</label>
+    <input type="password" id="passwordInput" placeholder="비밀번호를 입력하세요" autocomplete="off">
+    <div class="note">업로드할 때 사용한 비밀번호와 동일해야 합니다.</div>
+    <div id="loginError"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="app.login()">시작하기</button>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div id="mainScreen" class="screen">
+  <!-- Content -->
+  <div class="main-content" style="width:100%">
+    <div class="content-header">
+      <div class="header-logo" onclick="app.goRoot()"><svg width="20" height="20" viewBox="0 0 64 64"><ellipse cx="32" cy="18" rx="8" ry="14" fill="#FF3B30" opacity="0.85" transform="rotate(0 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#FF9500" opacity="0.85" transform="rotate(45 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#FFCC02" opacity="0.85" transform="rotate(90 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#34C759" opacity="0.85" transform="rotate(135 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#30B0C7" opacity="0.85" transform="rotate(180 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#007AFF" opacity="0.85" transform="rotate(225 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#5856D6" opacity="0.85" transform="rotate(270 32 32)"/><ellipse cx="32" cy="18" rx="8" ry="14" fill="#AF52DE" opacity="0.85" transform="rotate(315 32 32)"/></svg>Secure Gallery</div>
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="app.logout()" style="font-size:11px;padding:4px 10px;white-space:nowrap">로그아웃</button>
+    </div>
+    <div class="toolbar" id="toolbar" style="display:none">
+      <span class="file-count" id="fileCount"></span>
+      <button class="shuffle-btn" onclick="app.sortFiles('shuffle')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> 셔플</button>
+      <button class="sort-btn sort-name" id="sortNameBtn" onclick="app.toggleNameSort()"><span class="sort-icon">A</span> 이름 <span class="sort-arrow" id="sortNameArrow">↑</span></button>
+      <button class="sort-btn sort-size" id="sortSizeBtn" onclick="app.toggleSizeSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> 크기 <span class="sort-arrow" id="sortSizeArrow">↑</span></button>
+      <button class="sort-btn sort-date" id="sortDateBtn" onclick="app.toggleDateSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 날짜 <span class="sort-arrow" id="sortDateArrow">↑</span></button>
+      <div class="spacer"></div>
+      <div class="batch-actions" id="batchActions">
+        <span class="batch-count" id="batchCount"></span>
+        <button class="batch-btn fav-add" onclick="app.batchFavAdd()"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 추가</button>
+        <button class="batch-btn fav-rm" onclick="app.batchFavRemove()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 해제</button>
+        <button class="batch-btn del" onclick="app.batchDelete()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff4d4d" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2m1 0v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V6"/></svg> 삭제</button>
+        <button class="batch-btn clear" onclick="app.clearSelection()">선택 해제</button>
+      </div>
+      <div class="grid-slider">
+        <label>그리드</label>
+        <input type="range" id="gridSlider" min="80" max="300" value="160" oninput="app.setGridSize(this.value)" onchange="this.blur()">
+      </div>
+    </div>
+    <div class="content-scroll" id="contentScroll">
+      <div id="contentArea"></div>
+    </div>
+    <div class="scroll-top" id="scrollTopBtn" onclick="document.getElementById('contentScroll').scrollTo({top:0,behavior:'smooth'})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg></div>
+  </div>
+</div>
+
+<!-- ===== LIGHTBOX ===== -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-top">
+    <span class="lb-filename" id="lbFilename"></span>
+    <button onclick="app.toggleFullscreen()" id="lbFSBtn" title="전체화면"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+    <button onclick="app.hideCurrentFile()" title="숨기기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2m1 0v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V6"/></svg></button>
+    <button onclick="history.back()" title="닫기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="lb-body" id="lbBody">
+    <button class="lb-nav prev" onclick="app.lbNav(-1)">‹</button>
+    <div id="lbContent"></div>
+    <button class="lb-nav next" onclick="app.lbNav(1)">›</button>
+    <div class="lb-hud" id="lbHud"></div>
+  </div>
+  <div class="lb-bottom">
+    <button id="lbSSBtn" onclick="app.lbSSToggle()">▶ 슬라이드쇼</button>
+    <button class="lb-view-btn active" id="lbView1" onclick="app.setViewCount(1)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/></svg></button>
+    <button class="lb-view-btn" id="lbView2" onclick="app.setViewCount(2)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="8" y1="2" x2="8" y2="14"/></svg></button>
+    <button class="lb-view-btn" id="lbView3" onclick="app.setViewCount(3)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="6" y1="2" x2="6" y2="14"/><line x1="10.5" y1="2" x2="10.5" y2="14"/></svg></button>
+    <span class="lb-counter" id="lbCounter"></span>
+    <!-- Slideshow settings panel -->
+    <div class="ss-panel" id="ssPanel">
+      <h4>슬라이드쇼 설정</h4>
+      <div class="ss-row"><label>간격</label><select id="ssInterval"><option value="4" selected>4초</option><option value="6">6초</option><option value="8">8초</option><option value="10">10초</option></select></div>
+      <div class="ss-row"><label>순서</label><select id="ssOrder"><option value="seq">순차</option><option value="random">랜덤</option></select></div>
+      <div class="ss-row"><label>확대</label><input type="checkbox" id="ssKenBurns" style="width:16px;height:16px;accent-color:var(--accent)"></div>
+      <div class="ss-row" style="margin-top:12px;margin-bottom:0;justify-content:flex-end"><button style="background:var(--accent);color:#fff;padding:6px 16px;border-radius:6px;font-size:13px;font-weight:600;font-family:var(--font)" onclick="app.startSlideshow()">시작</button></div>
+    </div>
+  </div>
+  <div id="lbToast" style="position:absolute;top:60%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-family:var(--font);z-index:50;opacity:0;transition:opacity 0.3s;pointer-events:none"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONFIG = {
+  CLIENT_ID: '914768806134-ur8saf3irah9l9maqk6g5mb1mgif8urg.apps.googleusercontent.com',
+  SCOPES: 'https://www.googleapis.com/auth/drive.file',
+  ROOT_NAME: 'SecureGallery',
+  PBKDF2_ITERATIONS: 600000,
+};
+
+// ============================================================
+// Crypto
+// ============================================================
+const Crypto = {
+  async deriveKey(pw, salt) {
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:CONFIG.PBKDF2_ITERATIONS,hash:'SHA-256'}, km, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+  },
+  async decrypt(key, data) {
+    const b = new Uint8Array(data);
+    return crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)}, key, b.slice(12));
+  },
+  async encrypt(key, data) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const buf = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+    const enc = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, buf);
+    const out = new Uint8Array(12 + enc.byteLength); out.set(iv); out.set(new Uint8Array(enc), 12);
+    return out.buffer;
+  },
+  async decryptJSON(key, data) {
+    return JSON.parse(new TextDecoder().decode(await this.decrypt(key, data)));
+  },
+  async encryptJSON(key, obj) {
+    return this.encrypt(key, JSON.stringify(obj));
+  },
+  fromB64(s) { const b=atob(s),a=new Uint8Array(b.length); for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a.buffer; }
+};
+
+// ============================================================
+// Drive
+// ============================================================
+const Drive = {
+  token: null,
+  hdr() { return {Authorization:`Bearer ${this.token}`}; },
+  async _fetch(url, opts = {}) {
+    opts.headers = { ...opts.headers, ...this.hdr() };
+    let r = await fetch(url, opts);
+    if (r.status === 401) {
+      // Token expired, try silent refresh
+      try { await app._silentRefresh(); } catch {}
+      opts.headers = { ...opts.headers, ...this.hdr() };
+      r = await fetch(url, opts);
+    }
+    return r;
+  },
+  async listFolders(parentId) {
+    const q = `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+    const r = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=200`);
+    if (!r.ok) throw new Error(`Drive ${r.status}`);
+    const files = (await r.json()).files || [];
+    return files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+  },
+  async findFile(name, parentId) {
+    const q = `name='${name}' and '${parentId}' in parents and trashed=false`;
+    const r = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)&pageSize=1`);
+    if (!r.ok) throw new Error(`Drive ${r.status}`);
+    return ((await r.json()).files || [])[0]?.id || null;
+  },
+  async findFolderByName(name, parentId) {
+    const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+    const r = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)&pageSize=1`);
+    if (!r.ok) return null;
+    return ((await r.json()).files || [])[0]?.id || null;
+  },
+  async download(fileId) {
+    const r = await this._fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+    if (!r.ok) throw new Error(`Download ${r.status}`);
+    return r.arrayBuffer();
+  },
+  async upload(name, data, parentId) {
+    const fd = new FormData();
+    fd.append('metadata', new Blob([JSON.stringify({name, parents:[parentId]})], {type:'application/json'}));
+    fd.append('file', new Blob([data], {type:'application/octet-stream'}));
+    const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+      method:'POST', headers:{Authorization:`Bearer ${this.token}`}, body:fd
+    });
+    if (!r.ok) throw new Error(`Upload ${r.status}`);
+    return (await r.json()).id;
+  },
+  async update(fileId, data) {
+    const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      method:'PATCH', headers:{Authorization:`Bearer ${this.token}`,'Content-Type':'application/octet-stream'}, body:data
+    });
+    if (!r.ok) throw new Error(`Update ${r.status}`);
+  }
+};
+
+// ============================================================
+// App
+// ============================================================
+const app = {
+  key: null,
+  rootDriveId: null,
+  navStack: [],
+  currentFolderId: null,
+  currentFiles: [],
+  originalFiles: [],  // preserve original order for unshuffle
+  shuffled: false,
+  lbIndex: 0,
+  thumbCache: new Map(),
+  _thumbCacheOrder: [],  // LRU tracking for thumbCache
+  THUMB_CACHE_LIMIT: 300,
+  preloadCache: new Map(),
+  gridSize: parseInt(localStorage.getItem('sg_gridSize')) || 160,
+  // Mobile detection
+  _isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+  // Sidebar tree cache: folderId -> [{id,name}]
+  treeCache: {},
+  // Slideshow
+  ssTimer: null,
+  ssRunning: false,
+  ssOrder: 'seq',
+  ssInterval: 4,
+  ssKenBurns: false,
+  // Swipe
+  touchStartX: 0,
+  touchStartY: 0,
+  // Hidden files
+  hiddenSet: new Set(),
+  hiddenData: [],  // full entries with folder info and timestamp
+  hiddenFileId: null,
+  // Favorites
+  favSet: new Set(),
+  favData: [],  // full entries with folder info
+  favFileId: null,
+  // View mode (1, 2, or 3 images at once)
+  viewCount: 1,
+  // Background preloader
+  bgPreloadAbort: null,
+  get PRELOAD_CACHE_LIMIT() { return this._isMobile ? 20 : 60; },
+  // Thumb loading queue
+  _thumbQueue: [],
+  _thumbLoading: 0,
+  get _thumbConcurrency() { return this._isMobile ? 3 : 6; },
+  // Render guard
+  _showVer: 0,
+  _createdVideos: new Set(),
+  _tokenClient: null,
+  _refreshTimer: null,
+  // Lucky picks cache
+  _luckyCache: null,
+  _luckyDate: null,
+  // Random 1000 cache
+  _r1000Cache: null,
+  _r1000Date: null,
+  // Favorites view
+  _favMode: false,
+  _favFilter: 'all',
+  _orientFilter: 'all',
+  // Trash view
+  _trashMode: false,
+  // Multi-select
+  selectedSet: new Set(),
+  _lastSelectedIdx: -1,
+  // History
+  _skipHistory: false,
+  _hasInitialState: false,
+  // Spacer (jump scroll)
+  _spacerEndIdx: 0,
+  _spacerObs: null,
+  // Date separator
+  _lastRenderedMonth: null,
+
+  _saveScrollToHistory() {
+    const scroll = document.getElementById('contentScroll');
+    if (!scroll || !history.state) return;
+    const grid = document.getElementById('galleryGrid');
+    if (grid) {
+      // Gallery view: save item index
+      const items = grid.querySelectorAll('.gallery-item');
+      let visibleIdx = 0;
+      const scrollTop = scroll.getBoundingClientRect().top;
+      for (const item of items) {
+        if (item.getBoundingClientRect().top >= scrollTop) {
+          visibleIdx = parseInt(item.dataset.idx) || 0;
+          break;
+        }
+      }
+      history.replaceState({ ...history.state, restoreIdx: visibleIdx }, '');
+    } else {
+      // Main page: save raw scrollTop
+      history.replaceState({ ...history.state, restoreScrollTop: scroll.scrollTop }, '');
+    }
+  },
+
+  // ===== AUTH =====
+  async login() {
+    const pw = document.getElementById('passwordInput').value;
+    if (!pw) return this.showError('비밀번호를 입력하세요.');
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = '인증 중...';
+    try {
+      await this.auth();
+      btn.textContent = 'Drive 연결 중...';
+      this.rootDriveId = await Drive.findFolderByName(CONFIG.ROOT_NAME, 'root');
+      if (!this.rootDriveId) {
+        // Cached token might be invalid, force re-auth
+        localStorage.removeItem('sg_token');
+        localStorage.removeItem('sg_token_expiry');
+        await this.auth(true);
+        this.rootDriveId = await Drive.findFolderByName(CONFIG.ROOT_NAME, 'root');
+      }
+      if (!this.rootDriveId) { btn.disabled=false; btn.textContent='시작하기'; return this.showError('SecureGallery 폴더가 Drive에 없습니다.'); }
+      btn.textContent = '암호화 키 확인 중...';
+      const configId = await Drive.findFile('config.json', this.rootDriveId);
+      if (!configId) { btn.disabled=false; btn.textContent='시작하기'; return this.showError('config.json을 찾을 수 없습니다.'); }
+      const config = JSON.parse(new TextDecoder().decode(await Drive.download(configId)));
+      this.key = await Crypto.deriveKey(pw, new Uint8Array(Crypto.fromB64(config.salt)));
+      sessionStorage.setItem('sg_pw', pw);
+      await this.loadHidden();
+      await this.loadFavorites();
+      this._repairFavMtime(); // background, non-blocking
+      await this.buildTree(this.rootDriveId);
+      this.navStack = [];
+      this.navTo(this.rootDriveId, CONFIG.ROOT_NAME);
+    } catch (e) {
+      console.error(e); btn.disabled=false; btn.textContent='시작하기';
+      this.showError('연결 실패: ' + e.message);
+    }
+  },
+
+  auth(force) {
+    return new Promise((res, rej) => {
+      // Check saved token
+      if (!force) {
+        const saved = localStorage.getItem('sg_token');
+        const expiry = localStorage.getItem('sg_token_expiry');
+        if (saved && expiry && Date.now() < parseInt(expiry)) {
+          Drive.token = saved;
+          this._scheduleRefresh(parseInt(expiry));
+          return res();
+        }
+      }
+      const ck = () => {
+        if (typeof google === 'undefined' || !google.accounts) return setTimeout(ck, 100);
+        this._tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CONFIG.CLIENT_ID, scope: CONFIG.SCOPES,
+          callback: r => {
+            if(r.error) return rej(new Error(r.error));
+            this._setToken(r);
+            res();
+          },
+          error_callback: e => rej(new Error(e.message||'Auth failed'))
+        });
+        this._tokenClient.requestAccessToken();
+      };
+      ck();
+    });
+  },
+
+  _setToken(r) {
+    Drive.token = r.access_token;
+    const expiry = Date.now() + (r.expires_in || 3600) * 1000;
+    localStorage.setItem('sg_token', r.access_token);
+    localStorage.setItem('sg_token_expiry', String(expiry));
+    this._scheduleRefresh(expiry);
+  },
+
+  _scheduleRefresh(expiry) {
+    if (this._refreshTimer) clearTimeout(this._refreshTimer);
+    // Refresh 5 minutes before expiry
+    const delay = Math.max(0, expiry - Date.now() - 5 * 60 * 1000);
+    this._refreshTimer = setTimeout(() => this._silentRefresh(), delay);
+  },
+
+  async _silentRefresh() {
+    try {
+      if (!this._tokenClient) {
+        if (typeof google === 'undefined' || !google.accounts) return;
+        this._tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CONFIG.CLIENT_ID, scope: CONFIG.SCOPES,
+          callback: () => {},
+          error_callback: () => {}
+        });
+      }
+      await new Promise((res, rej) => {
+        this._tokenClient.callback = r => {
+          if (r.error) return rej(new Error(r.error));
+          this._setToken(r);
+          console.log('토큰 자동 갱신 완료');
+          res();
+        };
+        this._tokenClient.error_callback = e => rej(e);
+        this._tokenClient.requestAccessToken({ prompt: '' });
+      });
+    } catch (e) {
+      console.warn('토큰 자동 갱신 실패:', e);
+    }
+  },
+
+  logout() {
+    if (this._refreshTimer) clearTimeout(this._refreshTimer);
+    Drive.token=null; this.key=null; this.treeCache={};
+    localStorage.removeItem('sg_token');
+    localStorage.removeItem('sg_token_expiry');
+    localStorage.removeItem('sg_lucky');
+    localStorage.removeItem('sg_r1000');
+    sessionStorage.removeItem('sg_pw');
+    this.thumbCache.forEach(u=>URL.revokeObjectURL(u)); this.thumbCache.clear();
+    this._thumbCacheOrder = []; this._thumbQueue = []; this._thumbLoading = 0;
+    document.getElementById('passwordInput').value='';
+    this.showScreen('loginScreen');
+    document.getElementById('loginBtn').disabled=false;
+    document.getElementById('loginBtn').textContent='시작하기';
+  },
+
+  // ===== SIDEBAR TREE =====
+  async buildTree(rootId) {
+    const subs = await Drive.listFolders(rootId);
+    this.treeCache[rootId] = subs.filter(f => f.name !== 'index' && f.name !== 'thumbs' && f.name !== 'files');
+    // Pre-load 0_MOV children for grouped display
+    const movFolder = this.treeCache[rootId].find(f => f.name === '0_MOV');
+    if (movFolder) {
+      this.treeCache[movFolder.id] = await Drive.listFolders(movFolder.id);
+    }
+  },
+
+  _buildNavStack(targetId, rootId) {
+    // BFS through treeCache to find path
+    const path = [];
+    const find = (parentId, trail) => {
+      const children = this.treeCache[parentId];
+      if (!children) return false;
+      for (const child of children) {
+        const newTrail = [...trail, {id: child.id, name: child.name}];
+        if (child.id === targetId) { path.push(...newTrail); return true; }
+        if (find(child.id, newTrail)) return true;
+      }
+      return false;
+    };
+    find(rootId, []);
+    return path;
+  },
+
+  // ===== NAVIGATION =====
+  async navTo(folderId, folderName) {
+    this.currentFolderId = folderId;
+    this.currentFiles = [];
+    this.stopSlideshow(true);
+    // Clear preload cache on folder change
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    if (this._thumbObserver) this._thumbObserver.disconnect();
+    if (this._spacerObs) { this._spacerObs.disconnect(); this._spacerObs = null; }
+    this._spacerEndIdx = 0;
+    this._thumbQueue = [];
+    this.preloadCache.forEach(u => URL.revokeObjectURL(u));
+    this.preloadCache.clear();
+
+    if (folderId === this.rootDriveId) this.navStack = [];
+    this.shuffled = false;
+    this.selectedSet.clear(); this._lastSelectedIdx = -1;
+    this.originalFiles = [];
+    this._favMode = false;
+    this._trashMode = false;
+    this._currentSort = 'date_asc';
+    const filterDiv = document.getElementById('favFilterDiv');
+    if (filterDiv) filterDiv.style.display = 'none';
+    const nameArrow = document.getElementById('sortNameArrow');
+    const sizeArrow = document.getElementById('sortSizeArrow');
+    const dateArrow = document.getElementById('sortDateArrow');
+    if (nameArrow) nameArrow.textContent = '↑';
+    if (sizeArrow) sizeArrow.textContent = '↑';
+    if (dateArrow) dateArrow.textContent = '↑';
+
+    this.showScreen('mainScreen');
+    this.renderBreadcrumb();
+    if (!this._skipHistory) {
+      this._saveScrollToHistory();
+      const state = { view: 'folder', folderId, folderName, navStack: JSON.parse(JSON.stringify(this.navStack)) };
+      if (folderId === this.rootDriveId && !this._hasInitialState) {
+        history.replaceState(state, '');
+        this._hasInitialState = true;
+      } else {
+        history.pushState(state, '');
+      }
+    }
+
+    const area = document.getElementById('contentArea');
+    area.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+    document.getElementById('toolbar').style.display = 'none';
+
+    try {
+      // Subfolders
+      if (!this.treeCache[folderId]) {
+        this.treeCache[folderId] = await Drive.listFolders(folderId);
+      }
+      const subfolders = folderId === this.rootDriveId
+        ? (this.treeCache[folderId] || []).filter(f => f.name !== 'index' && f.name !== 'thumbs' && f.name !== 'files')
+        : (this.treeCache[folderId] || []);
+
+      // Index
+      const indexId = await Drive.findFile('_index.enc', folderId);
+      let files = [];
+      if (indexId) {
+        try {
+          const allFiles = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
+          files = allFiles.filter(f => !this.hiddenSet.has(f.origDriveId));
+          // Auto-sort by date (oldest first)
+          files.sort((a, b) => {
+            const at = a.mtime || 0, bt = b.mtime || 0;
+            if (!at && !bt) return 0;
+            if (!at) return 1;
+            if (!bt) return -1;
+            return at - bt;
+          });
+          this.currentFiles = files;
+        } catch (e) { console.error(e); this.toast('인덱스 복호화 실패'); }
+      }
+
+      this.renderView(subfolders, files);
+    } catch (e) {
+      console.error(e);
+      area.innerHTML = `<div class="empty-state">❌ ${this.esc(e.message)}</div>`;
+    }
+  },
+
+  renderBreadcrumb() {
+    const bc = document.getElementById('breadcrumb');
+    if (!this.navStack.length) { bc.innerHTML = ''; return; }
+    let h = '';
+    for (let i = 0; i < this.navStack.length; i++) {
+      const item = this.navStack[i];
+      if (i > 0) h += `<span class="sep">›</span>`;
+      h += i === this.navStack.length - 1
+        ? `<span class="current">${this.esc(item.name)}</span>`
+        : `<a href="#" onclick="app.goTo(${i});return false;">${this.esc(item.name)}</a>`;
+    }
+    bc.innerHTML = h;
+  },
+
+  goRoot() { this.navStack=[]; this.navTo(this.rootDriveId, CONFIG.ROOT_NAME); },
+  goTo(i) { this.navStack=this.navStack.slice(0,i+1); this.navTo(this.navStack[i].id, this.navStack[i].name); },
+  openFolder(id, name) { this.navStack.push({id,name}); this.navTo(id,name); },
+
+  renderView(subfolders, files) {
+    const area = document.getElementById('contentArea');
+    let h = '';
+
+    // Lucky picks on root page
+    if (this.currentFolderId === this.rootDriveId) {
+      // Favorites section
+      if (this.favData.length > 0) {
+        h += `<div class="lucky-section">
+          <div class="lucky-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="#ff3b5c" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 즐겨찾기 <span style="font-size:12px;font-weight:400;color:var(--text2)">${this.favData.length}개</span>
+            <button onclick="app.openFavorites()" style="margin-left:8px">모두 보기</button>
+            <div style="flex:1"></div>
+            <div class="grid-slider"><label>크기</label><input type="range" id="luckySlider" min="80" max="300" value="${parseInt(localStorage.getItem('sg_gridSize'))||160}" oninput="app.setLuckyGridSize(this.value)" onchange="this.blur()"></div>
+          </div>
+          <div class="lucky-grid" id="favGrid"></div>
+        </div>`;
+      }
+
+      // Random 1000 section
+      const sliderHtml = this.favData.length === 0 ? `<div style="flex:1"></div><div class="grid-slider"><label>크기</label><input type="range" id="luckySlider" min="80" max="300" value="${parseInt(localStorage.getItem('sg_gridSize'))||160}" oninput="app.setLuckyGridSize(this.value)" onchange="this.blur()"></div>` : '';
+      h += `<div class="lucky-section">
+        <div class="lucky-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#AF52DE" stroke-width="2" stroke-linecap="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> Random 1000 <button onclick="app.loadRandom1000(true)">새로고침</button>
+          <button onclick="app.openRandom1000()" style="margin-left:4px">모두 보기</button>${sliderHtml}
+        </div>
+        <div id="r1000Area"><div style="color:var(--text2);font-size:13px;">로딩 중...</div></div>
+      </div>`;
+
+      h += `<div class="lucky-section">
+        <div class="lucky-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFCC02" stroke-width="2" stroke-linecap="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg> 오늘의 추천 <button onclick="app.loadLuckyPicks(true)">새로고침</button>
+        </div>
+        <div id="luckyArea"><div style="color:var(--text2);font-size:13px;">로딩 중...</div></div>
+      </div>`;
+    }
+
+    if (subfolders.length > 0) {
+      if (this.currentFolderId === this.rootDriveId) {
+        // Grouped folder display for root
+        const movFolder = subfolders.find(f => f.name === '0_MOV');
+        const movChildren = movFolder ? (this.treeCache[movFolder.id] || []).filter(f => f.name !== 'RIFE') : [];
+        const portraits = subfolders.filter(f => /^\d+$/.test(f.name) || f.name.startsWith('Soft_'));
+        const landscapes = subfolders.filter(f => f.name.toLowerCase().startsWith('wide_'));
+
+        const renderGroup = (label, icon, color, items, isMovChild) => {
+          if (!items.length) return '';
+          let g = `<div style="margin-bottom:24px">`;
+          g += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">`;
+          g += `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round">${icon}</svg>`;
+          g += `<span style="font-size:13px;font-weight:600;color:${color}">${label}</span>`;
+          g += `<span style="font-size:11px;color:var(--text2)">${items.length}개 폴더</span>`;
+          g += `</div>`;
+          g += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">`;
+          for (const f of items) {
+            const folderId = f.id;
+            const folderName = this.esc(f.name);
+            const onclick = isMovChild
+              ? `app.navStack.push({id:'${movFolder.id}',name:'0_MOV'});app.openFolder('${folderId}','${folderName}')`
+              : `app.openFolder('${folderId}','${folderName}')`;
+            g += `<div class="gallery-item" style="aspect-ratio:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;display:flex;align-items:center;gap:8px" onclick="${onclick}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#F9A825" stroke="#F57F17" stroke-width="1"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${folderName}</span>
+            </div>`;
+          }
+          g += `</div></div>`;
+          return g;
+        };
+
+        h += renderGroup('Video', '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>', '#007AFF', movChildren, true);
+        h += renderGroup('Portrait', '<rect x="6" y="3" width="12" height="18" rx="2"/>', '#AF52DE', portraits, false);
+        h += renderGroup('Landscape', '<rect x="3" y="6" width="18" height="12" rx="2"/>', '#34C759', landscapes, false);
+      } else {
+        h += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:20px;">`;
+        for (const f of subfolders) {
+          h += `<div class="gallery-item" style="aspect-ratio:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;display:flex;align-items:center;gap:8px" onclick="app.openFolder('${f.id}','${this.esc(f.name)}')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#F9A825" stroke="#F57F17" stroke-width="1"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${this.esc(f.name)}</span>
+          </div>`;
+        }
+        h += `</div>`;
+      }
+    }
+
+    if (files.length > 0) {
+      document.getElementById('toolbar').style.display = 'flex';
+      document.getElementById('fileCount').textContent = `${files.length.toLocaleString()}개 파일`;
+      const ba = document.getElementById('batchActions'); if (ba) ba.classList.remove('show');
+      h += `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
+    } else {
+      document.getElementById('toolbar').style.display = subfolders.length > 0 ? 'none' : 'none';
+      if (subfolders.length === 0 && this.currentFolderId !== this.rootDriveId) h += `<div class="empty-state">비어 있는 폴더입니다.</div>`;
+    }
+
+    // Trash section on root page
+    if (this.currentFolderId === this.rootDriveId && this.hiddenData.length > 0) {
+      h += `<div class="lucky-section" style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+        <div class="lucky-title" style="color:var(--text2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2m1 0v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V6"/></svg> 휴지통 <span style="font-size:12px;font-weight:400">${this.hiddenData.length}개</span>
+          <button onclick="app.openTrash()" style="margin-left:8px">모두 보기</button>
+        </div>
+        <div class="lucky-grid" id="trashGrid"></div>
+      </div>`;
+    }
+
+    area.innerHTML = h;
+    if (files.length > 0) this.renderGallery();
+    if (this.currentFolderId === this.rootDriveId) {
+      this.renderFavGrid();
+      this.renderTrashPreview();
+      this.loadRandom1000();
+      this.loadLuckyPicks();
+      // Apply saved grid size to preview grids
+      if (this.gridSize !== 160) {
+        document.querySelectorAll('.lucky-grid').forEach(g => {
+          g.style.gridTemplateColumns = `repeat(auto-fill,minmax(${this.gridSize}px,1fr))`;
+        });
+      }
+    }
+  },
+
+  // ===== GALLERY =====
+  renderGallery() {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const gridSlider = document.getElementById('gridSlider');
+    if (gridSlider) gridSlider.value = this.gridSize;
+    const BATCH = this._isMobile ? 30 : 50;
+    this._galleryLoaded = 0;
+    this._lastRenderedMonth = null;
+
+    // Lazy thumb observer
+    if (this._thumbObserver) this._thumbObserver.disconnect();
+    const rootMargin = this._isMobile ? '50px' : '150px';
+    this._thumbObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const el = entry.target;
+        const driveId = el.dataset.thumbId;
+        if (driveId) { this.loadThumb(driveId, el); el.removeAttribute('data-thumb-id'); }
+        this._thumbObserver.unobserve(el);
+      }
+    }, { root: document.getElementById('contentScroll'), rootMargin });
+
+    this._galleryLoadBatch = () => {
+      const end = Math.min(this._galleryLoaded + BATCH, this.currentFiles.length);
+      const frag = document.createDocumentFragment();
+      const toObserve = [];
+      const showDateSep = this._currentSort === 'date_asc' || this._currentSort === 'date_desc';
+      for (let i = this._galleryLoaded; i < end; i++) {
+        const file = this.currentFiles[i];
+        // Date separator
+        if (showDateSep) {
+          const monthKey = file.mtime
+            ? `${new Date(file.mtime).getFullYear()}-${String(new Date(file.mtime).getMonth()+1).padStart(2,'0')}`
+            : '__none__';
+          if (monthKey !== this._lastRenderedMonth) {
+            this._lastRenderedMonth = monthKey;
+            const sep = document.createElement('div');
+            sep.className = 'date-sep';
+            if (file.mtime) {
+              const d = new Date(file.mtime);
+              sep.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${d.getFullYear()}년 ${d.getMonth()+1}월`;
+            } else {
+              sep.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>날짜 없음`;
+            }
+            frag.appendChild(sep);
+          }
+        }
+        const el = document.createElement('div');
+        el.className = 'gallery-item' + (this.selectedSet.has(file.origDriveId) ? ' selected' : '');
+        el.dataset.idx = i;
+        el.onclick = (e) => {
+          if (e.target.closest('.sel-check')) return;
+          this.openLightbox(i);
+        };
+        const cached = this.thumbCache.get(file.thumbDriveId);
+        let ih = cached ? `<img src="${cached}">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
+        if (file.type?.startsWith('video/')) ih += `<div class="vid-badge">▶</div>`;
+        if (this.favSet.has(file.origDriveId)) ih += `<div class="fav-badge">❤</div>`;
+        if (file._folderName) {
+          const dateTag = file.mtime ? `<span style="opacity:0.6;margin-left:4px">${new Date(file.mtime).toISOString().slice(0,10)}</span>` : '';
+          ih += `<div class="li-badge">${this.esc(file._folderName)}${dateTag}</div>`;
+        }
+        const sizeStr = file.size ? (file.size < 1048576 ? (file.size/1024).toFixed(0)+'KB' : (file.size/1048576).toFixed(1)+'MB') : '';
+        const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
+        ih += `<div class="hover-info"><div class="hi-name">${this.esc(file.name)}</div><div class="hi-size">${sizeStr}${dateStr ? '  ·  ' + dateStr : ''}</div></div>`;
+        ih += `<div class="sel-check" onclick="event.stopPropagation();app.toggleSelect(${i},event.shiftKey)"></div>`;
+        el.innerHTML = ih;
+        if (!cached) { el.dataset.thumbId = file.thumbDriveId; toObserve.push(el); }
+        frag.appendChild(el);
+      }
+      grid.appendChild(frag);
+      for (const el of toObserve) this._thumbObserver.observe(el);
+      this._galleryLoaded = end;
+      if (this._galleryLoaded < this.currentFiles.length) {
+        const obs = new IntersectionObserver(entries => {
+          if (entries[0].isIntersecting) { obs.disconnect(); this._galleryLoadBatch(); }
+        });
+        obs.observe(grid.lastElementChild);
+      }
+    };
+    this._galleryLoadBatch();
+  },
+
+  async loadThumb(driveId, el) {
+    if (!driveId) return;
+    // Queue-based: add to queue and process
+    this._thumbQueue.push({ driveId, el });
+    this._processThumbQueue();
+  },
+
+  async _processThumbQueue() {
+    while (this._thumbQueue.length > 0 && this._thumbLoading < this._thumbConcurrency) {
+      const item = this._thumbQueue.shift();
+      // Skip disconnected elements (user navigated away)
+      if (!item.el.isConnected) continue;
+      // Skip gallery items that scrolled far out of view
+      if (!item.isPreview && item.el.dataset.idx) {
+        const rect = item.el.getBoundingClientRect();
+        const viewH = window.innerHeight;
+        if (rect.top > viewH + 800 || rect.bottom < -800) {
+          // Re-add thumbId so observer can re-trigger later
+          if (item.driveId && !this.thumbCache.has(item.driveId)) {
+            item.el.dataset.thumbId = item.driveId;
+            this._thumbObserver?.observe(item.el);
+          }
+          continue;
+        }
+      }
+      this._thumbLoading++;
+      this._loadThumbItem(item.driveId, item.el, item.isPreview).finally(() => {
+        this._thumbLoading--;
+        this._processThumbQueue();
+      });
+    }
+  },
+
+  async _loadThumbItem(driveId, el, isPreview) {
+    try {
+      let url = this.thumbCache.get(driveId);
+      if (!url) {
+        url = URL.createObjectURL(new Blob([await Crypto.decrypt(this.key, await Drive.download(driveId))], {type:'image/jpeg'}));
+        this._setThumbCache(driveId, url);
+      }
+      if (isPreview) {
+        const img = document.createElement('img');
+        img.src = url;
+        const placeholder = el.querySelector('div:first-child');
+        if (placeholder && !placeholder.classList.contains('li-badge') && !placeholder.classList.contains('li-vid')) {
+          el.insertBefore(img, el.firstChild);
+          placeholder.remove();
+        }
+      } else {
+        const ph = el.querySelector('.loading-placeholder');
+        if (ph) { const img = document.createElement('img'); img.src = url; el.insertBefore(img, ph); ph.remove(); }
+      }
+    } catch {}
+  },
+
+  _setThumbCache(driveId, url) {
+    if (this.thumbCache.has(driveId)) {
+      this._thumbCacheOrder = this._thumbCacheOrder.filter(k => k !== driveId);
+    }
+    this.thumbCache.set(driveId, url);
+    this._thumbCacheOrder.push(driveId);
+    // Evict oldest from map (don't revoke - displayed images still need the URL)
+    while (this._thumbCacheOrder.length > this.THUMB_CACHE_LIMIT) {
+      const oldest = this._thumbCacheOrder.shift();
+      this.thumbCache.delete(oldest);
+    }
+  },
+
+  setGridSize(v) {
+    this.gridSize = parseInt(v);
+    localStorage.setItem('sg_gridSize', v);
+    const grid = document.getElementById('galleryGrid');
+    if (grid) grid.style.gridTemplateColumns = `repeat(auto-fill,minmax(${v}px,1fr))`;
+    const luckySlider = document.getElementById('luckySlider');
+    if (luckySlider) luckySlider.value = v;
+  },
+
+  setLuckyGridSize(v) {
+    this.gridSize = parseInt(v);
+    localStorage.setItem('sg_gridSize', v);
+    document.querySelectorAll('.lucky-grid').forEach(g => {
+      g.style.gridTemplateColumns = `repeat(auto-fill,minmax(${v}px,1fr))`;
+    });
+    const gridSlider = document.getElementById('gridSlider');
+    if (gridSlider) gridSlider.value = v;
+  },
+
+  // ===== LIGHTBOX =====
+  async openLightbox(i) {
+    this.lbIndex = i;
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    this.closeSSPanel();
+    if (!this._skipHistory) { this._saveScrollToHistory(); history.pushState({ view: 'lightbox' }, ''); }
+    await this.showLBItem(i);
+  },
+
+  closeLightbox(skipScroll) {
+    ++this._showVer;
+    this.stopSlideshow(true);
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    document.getElementById('lightbox').classList.remove('active');
+    document.body.style.overflow = '';
+    this._stopAllMedia();
+    document.getElementById('lbContent').innerHTML = '';
+    if (!skipScroll) {
+      const idx = this.lbIndex;
+      setTimeout(() => this.scrollToItem(idx), 50);
+    }
+  },
+
+  async lbNav(d) {
+    const step = this.viewCount > 1 ? d * this.viewCount : d;
+    const n = this.lbIndex + step;
+    if (n < 0 || n >= this.currentFiles.length) {
+      if (this.ssRunning) this.stopSlideshow(true);
+      return;
+    }
+    // Reset slideshow timer on manual nav (don't stop)
+    if (this.ssRunning) {
+      clearTimeout(this.ssTimer);
+      this.ssTimer = null;
+    }
+    this.lbIndex = n;
+    await this.showLBItem(n);
+    // Restart slideshow timer from new position
+    if (this.ssRunning) this.ssScheduleNext();
+  },
+
+  async showLBItem(i) {
+    const ver = ++this._showVer;
+    const c = document.getElementById('lbContent');
+
+    // Stop videos IMMEDIATELY before fade wait
+    this._stopAllMedia();
+
+    // Fade out current content
+    c.classList.add('fade-out');
+    await new Promise(r => setTimeout(r, 200));
+    if (ver !== this._showVer) return;
+
+    c.innerHTML = '';
+    const modeClass = this.viewCount === 3 ? 'triple' : this.viewCount === 2 ? 'dual' : '';
+    c.className = (modeClass + ' fade-out').trim();
+
+    const f = this.currentFiles[i];
+    if (!f) return;
+
+    if (this.viewCount > 1) {
+      const extras = [];
+      for (let n = 1; n < this.viewCount; n++) {
+        const ef = this.currentFiles[i + n];
+        if (ef) extras.push(ef);
+      }
+      const allFiles = [f, ...extras.filter(Boolean)];
+      const namesParts = allFiles.map(file => {
+        const fn = file._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : '');
+        const tag = fn ? `<span style="color:var(--accent)">${this.esc(fn)}</span>› ` : '';
+        return tag + this.esc(file.name);
+      });
+      document.getElementById('lbFilename').innerHTML = namesParts.join('  |  ');
+      document.getElementById('lbCounter').textContent = `${(i+1).toLocaleString()}-${(i+extras.length+1).toLocaleString()} / ${this.currentFiles.length.toLocaleString()}`;
+
+      try {
+        // Load all media elements in parallel
+        const allFiles = [f, ...extras];
+        const elements = await Promise.all(allFiles.map(file => this._makeMediaEl(file)));
+        if (ver !== this._showVer) return;
+
+        for (const el of elements) c.appendChild(el);
+
+        requestAnimationFrame(() => { this._layoutMultiView(c); requestAnimationFrame(() => c.classList.remove('fade-out')); });
+        this._playAllMedia();
+        this.preloadNext(i);
+      } catch(e) { if (ver === this._showVer) { c.innerHTML='<p style="color:var(--danger);">복호화 실패</p>'; c.classList.remove('fade-out'); } }
+    } else {
+      const folderName = f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : '');
+      const folderTag = folderName ? `<span style="color:var(--accent);margin-right:6px">${this.esc(folderName)}</span>›  ` : '';
+      document.getElementById('lbFilename').innerHTML = folderTag + this.esc(f.name);
+      document.getElementById('lbCounter').textContent = `${(i+1).toLocaleString()} / ${this.currentFiles.length.toLocaleString()}`;
+
+      try {
+        const el = await this._makeMediaEl(f);
+        if (ver !== this._showVer) return;
+        c.appendChild(el);
+
+        requestAnimationFrame(() => requestAnimationFrame(() => c.classList.remove('fade-out')));
+        this._playAllMedia();
+        this.preloadNext(i);
+      } catch(e) { if (ver === this._showVer) { c.innerHTML='<p style="color:var(--danger);">복호화 실패</p>'; c.classList.remove('fade-out'); } }
+    }
+  },
+
+  async _makeMediaEl(f) {
+    const wasCached = this.preloadCache.has(f.origDriveId);
+    let url = this.preloadCache.get(f.origDriveId);
+    if (!url) {
+      const blob = new Blob([await Crypto.decrypt(this.key, await Drive.download(f.origDriveId))], {type:f.type});
+      url = URL.createObjectURL(blob);
+      this.preloadCache.set(f.origDriveId, url);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'lb-media-wrap';
+    const timeout = wasCached ? 400 : 2000;
+
+    if (f.type?.startsWith('video/')) {
+      const video = document.createElement('video');
+      this._createdVideos.add(video);
+      video.src = url;
+      video.controls = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      video.addEventListener('ended', () => { if (this.ssRunning) this.ssAutoNext(); });
+      await new Promise(r => { video.onloadeddata = r; setTimeout(r, timeout); });
+      wrap.appendChild(video);
+    } else {
+      const img = document.createElement('img');
+      img.src = url;
+      await new Promise(r => { img.onload = r; setTimeout(r, timeout); });
+      // Wrap in kb-clip for Ken Burns clipping
+      const clip = document.createElement('div');
+      clip.className = 'kb-clip';
+      clip.appendChild(img);
+      wrap.appendChild(clip);
+    }
+
+    // Heart button (SVG for cross-platform consistency)
+    const heart = document.createElement('div');
+    heart.className = 'lb-fav-btn' + (this.favSet.has(f.origDriveId) ? ' active' : '');
+    heart.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    heart.onclick = (e) => { e.stopPropagation(); this.toggleFavorite(f, heart); };
+    heart.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.toggleFavorite(f, heart);
+    });
+    wrap.appendChild(heart);
+
+    // Go to folder button (only show when file has folder info)
+    if (f._folderId) {
+      const goBtn = document.createElement('div');
+      goBtn.className = 'lb-goto-btn';
+      goBtn.title = f._folderName || '폴더로 이동';
+      goBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+      goBtn.onclick = (e) => { e.stopPropagation(); this.goToFileFolder(f); };
+      goBtn.addEventListener('touchend', (e) => { e.stopPropagation(); e.preventDefault(); this.goToFileFolder(f); });
+      wrap.appendChild(goBtn);
+    }
+
+    // Heart animation element
+    const heartAnim = document.createElement('div');
+    heartAnim.className = 'lb-heart-anim';
+    heartAnim.innerHTML = '<svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    wrap.appendChild(heartAnim);
+
+    // Fav toast inside this wrap
+    const favToast = document.createElement('div');
+    favToast.className = 'lb-fav-toast';
+    wrap.appendChild(favToast);
+
+    // Position heart and goto button over actual image area (not letterbox)
+    const media = wrap.querySelector('img, video');
+    const goBtn = wrap.querySelector('.lb-goto-btn');
+    const clip = wrap.querySelector('.kb-clip');
+    const positionHeart = () => {
+      if (!media || !wrap.offsetHeight) return;
+      const cw = wrap.offsetWidth, ch = wrap.offsetHeight;
+      const nw = media.naturalWidth || media.videoWidth || cw;
+      const nh = media.naturalHeight || media.videoHeight || ch;
+      if (!nw || !nh) return;
+      const scale = Math.min(cw / nw, ch / nh);
+      const rw = nw * scale, rh = nh * scale;
+      const offTop = (ch - rh) / 2, offLeft = (cw - rw) / 2;
+      heart.style.top = (offTop + 10) + 'px';
+      heart.style.left = (offLeft + 10) + 'px';
+      if (goBtn) {
+        goBtn.style.top = (offTop + 10) + 'px';
+        goBtn.style.left = (offLeft + 48) + 'px';
+      }
+      // Size kb-clip to match rendered image area
+      if (clip) {
+        clip.style.width = Math.round(rw) + 'px';
+        clip.style.height = Math.round(rh) + 'px';
+        clip.style.top = Math.round(offTop) + 'px';
+        clip.style.left = Math.round(offLeft) + 'px';
+      }
+    };
+    requestAnimationFrame(() => requestAnimationFrame(positionHeart));
+    new ResizeObserver(positionHeart).observe(wrap);
+
+    // Double-click to toggle favorite
+    const doFavToggle = () => {
+      this.toggleFavorite(f, heart);
+    };
+
+    // Desktop: dblclick to toggle favorite (images only, videos use heart button)
+    wrap.addEventListener('dblclick', (e) => {
+      if (e.target.closest('.lb-fav-btn') || e.target.closest('.lb-goto-btn') || e.target.closest('video')) return;
+      e.preventDefault();
+      doFavToggle();
+    });
+
+    // Mobile: double-tap detection (images only)
+    let lastTap = 0;
+    wrap.addEventListener('touchend', (e) => {
+      if (e.target.closest('.lb-fav-btn') || e.target.closest('.lb-goto-btn') || e.target.closest('video')) return;
+      const now = Date.now();
+      if (now - lastTap < 300) { e.preventDefault(); doFavToggle(); lastTap = 0; }
+      else { lastTap = now; }
+    });
+
+    return wrap;
+  },
+
+  async preloadNext(currentIndex) {
+    const range = this._isMobile ? Math.min(this.viewCount * 2, 2) : this.viewCount * 4;
+    const promises = [];
+    for (let offset = 1; offset <= range; offset++) {
+      for (const idx of [currentIndex + offset, currentIndex - offset]) {
+        if (idx < 0 || idx >= this.currentFiles.length) continue;
+        const nf = this.currentFiles[idx];
+        if (this.preloadCache.has(nf.origDriveId)) continue;
+        promises.push(this._preloadOne(nf));
+      }
+    }
+    Promise.all(promises).catch(() => {});
+    this.startBgPreload(currentIndex);
+  },
+
+  async _preloadOne(f) {
+    if (this.preloadCache.has(f.origDriveId)) return;
+    try {
+      const blob = new Blob([await Crypto.decrypt(this.key, await Drive.download(f.origDriveId))], {type:f.type});
+      this.preloadCache.set(f.origDriveId, URL.createObjectURL(blob));
+    } catch {}
+  },
+
+  startBgPreload(centerIndex) {
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    const ctrl = { abort: false };
+    this.bgPreloadAbort = ctrl;
+
+    const startOffset = (this._isMobile ? 3 : 5) + 1;
+    const bgConcurrency = this._isMobile ? 1 : 3;
+    const queue = [];
+    for (let offset = startOffset; offset < this.currentFiles.length; offset++) {
+      if (queue.length >= this.PRELOAD_CACHE_LIMIT) break;
+      const fwd = centerIndex + offset;
+      const bwd = centerIndex - offset;
+      if (fwd < this.currentFiles.length) queue.push(fwd);
+      if (bwd >= 0) queue.push(bwd);
+    }
+
+    (async () => {
+      for (let i = 0; i < queue.length; i += bgConcurrency) {
+        if (ctrl.abort) return;
+        if (this.preloadCache.size >= this.PRELOAD_CACHE_LIMIT) return;
+        const batch = queue.slice(i, i + bgConcurrency).map(idx => {
+          const f = this.currentFiles[idx];
+          if (!f || this.preloadCache.has(f.origDriveId)) return Promise.resolve();
+          return this._preloadOne(f);
+        });
+        await Promise.all(batch);
+      }
+    })();
+  },
+
+  // ===== SLIDESHOW =====
+  toggleSSPanel() {
+    const panel = document.getElementById('ssPanel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      const kb = document.getElementById('ssKenBurns');
+      if (kb) kb.checked = localStorage.getItem('sg_kenBurns') === '1';
+    }
+  },
+
+  closeSSPanel() {
+    document.getElementById('ssPanel').classList.remove('open');
+  },
+
+  // Lightbox bottom button: show panel if stopped, stop if running
+  lbSSToggle() {
+    if (this.ssRunning) {
+      this.stopSlideshow();
+    } else {
+      this.toggleSSPanel();
+    }
+  },
+
+  // Spacebar: toggle without panel
+  toggleSlideshow() {
+    if (this.ssRunning) {
+      this.stopSlideshow();
+    } else {
+      this.startSlideshow();
+    }
+  },
+
+  startSlideshow() {
+    const intervalEl = document.getElementById('ssInterval');
+    const orderEl = document.getElementById('ssOrder');
+    const kbEl = document.getElementById('ssKenBurns');
+    this.ssInterval = parseInt(intervalEl.value) || 4;
+    this.ssOrder = orderEl.value;
+    this.ssKenBurns = kbEl?.checked || false;
+    if (kbEl) localStorage.setItem('sg_kenBurns', this.ssKenBurns ? '1' : '0');
+    this.ssRunning = true;
+    this.closeSSPanel();
+    document.getElementById('lbSSBtn').classList.add('active');
+    document.getElementById('lbSSBtn').textContent = '⏸ 정지';
+    const orderLabel = this.ssOrder === 'random' ? '랜덤' : '순차';
+    const kbLabel = this.ssKenBurns ? ' · 확대' : '';
+    this.showHud('▶', '슬라이드쇼', `${orderLabel} · ${this.ssInterval}초${kbLabel}`);
+    this._applyKenBurns();
+    this.ssScheduleNext();
+  },
+
+  _applyKenBurns() {
+    const wraps = document.querySelectorAll('#lbContent .lb-media-wrap');
+    wraps.forEach(w => {
+      if (this.ssRunning && this.ssKenBurns) {
+        w.classList.add('ken-burns');
+      } else {
+        w.classList.remove('ken-burns');
+      }
+    });
+  },
+
+  stopSlideshow(silent) {
+    if (!this.ssRunning) return;
+    this.ssRunning = false;
+    clearTimeout(this.ssTimer);
+    this.ssTimer = null;
+    const btn = document.getElementById('lbSSBtn');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '▶ 슬라이드쇼'; }
+    const video = document.querySelector('#lbContent video');
+    if (video) video.loop = true;
+    this._applyKenBurns();
+    if (!silent) this.showHud('⏸', '일시정지', '');
+  },
+
+  ssScheduleNext() {
+    if (!this.ssRunning) return;
+    // Always clear previous timer to prevent duplicates
+    clearTimeout(this.ssTimer);
+    this.ssTimer = null;
+    this._applyKenBurns();
+    const f = this.currentFiles[this.lbIndex];
+
+    // For videos: disable loop, wait for 'ended' event
+    if (f?.type?.startsWith('video/')) {
+      const video = document.querySelector('#lbContent video');
+      if (video) video.loop = false;
+      return; // 'ended' event will call ssAutoNext
+    }
+
+    // For images: use timer
+    this.ssTimer = setTimeout(() => {
+      if (!this.ssRunning) return;
+      this.ssAutoNext();
+    }, this.ssInterval * 1000);
+  },
+
+  ssAutoNext() {
+    if (!this.ssRunning) return;
+    let next;
+    if (this.ssOrder === 'random') {
+      if (this.currentFiles.length > 1) {
+        do { next = Math.floor(Math.random() * this.currentFiles.length); }
+        while (next === this.lbIndex);
+      } else { next = 0; }
+    } else {
+      const step = this.viewCount;
+      next = this.lbIndex + step;
+      if (next >= this.currentFiles.length) next = 0;
+    }
+    this.lbIndex = next;
+    this.showLBItem(next).then(() => this.ssScheduleNext());
+  },
+
+  // ===== FULLSCREEN =====
+  toggleFullscreen() {
+    const lb = document.getElementById('lightbox');
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      lb.requestFullscreen().catch(() => {});
+    }
+  },
+
+  updateFSBtn() {
+    const btn = document.getElementById('lbFSBtn');
+    if (!btn) return;
+    btn.title = document.fullscreenElement ? '전체화면 해제' : '전체화면';
+    btn.innerHTML = document.fullscreenElement
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 14h3a2 2 0 0 1 2 2v3m6-5h3a2 2 0 0 0 2-2V9M9 10V7a2 2 0 0 0-2-2H4m11 0h3a2 2 0 0 1 2 2v3"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
+  },
+
+  // ===== VIEW COUNT =====
+  setViewCount(n) {
+    this.viewCount = n;
+    document.querySelectorAll('.lb-view-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById(`lbView${n}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    // Align index to viewCount boundary
+    if (n > 1 && this.lbIndex % n !== 0) {
+      this.lbIndex = Math.max(0, this.lbIndex - (this.lbIndex % n));
+    }
+    this.showLBItem(this.lbIndex);
+  },
+
+  // ===== LUCKY PICKS =====
+  async loadLuckyPicks(force) {
+    const area = document.getElementById('luckyArea');
+    if (!area) return;
+
+    const today = new Date().toDateString();
+
+    // 1. Memory cache (same session)
+    if (!force && this._luckyCache && this._luckyDate === today) {
+      this._renderLuckyFromCache(area);
+      return;
+    }
+
+    // 2. localStorage cache (across refreshes)
+    if (!force) {
+      try {
+        const stored = localStorage.getItem('sg_lucky');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.date === today) {
+            this._luckyCache = { images: parsed.images, videos: parsed.videos };
+            this._luckyDate = today;
+            this._renderLuckyFromCache(area);
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    // 3. Fresh scan
+    area.innerHTML = `<div style="display:flex;align-items:center;gap:10px;">
+      <span style="color:var(--text2);font-size:13px;" id="luckyStatus">폴더 스캔 중...</span>
+      <div style="flex:1;max-width:200px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden">
+        <div id="luckyBar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.2s"></div>
+      </div>
+    </div>`;
+    const bar = document.getElementById('luckyBar');
+    const status = document.getElementById('luckyStatus');
+
+    const allFolders = [];
+    try {
+      let rootChildren = this.treeCache[this.rootDriveId];
+      if (!rootChildren) {
+        rootChildren = await Drive.listFolders(this.rootDriveId);
+        this.treeCache[this.rootDriveId] = rootChildren;
+      }
+      const topFolders = rootChildren.filter(f => f.name !== 'index' && f.name !== 'thumbs' && f.name !== 'files');
+      const totalTop = topFolders.length;
+      let scanned = 0;
+
+      for (const top of topFolders) {
+        allFolders.push(top);
+        let children = this.treeCache[top.id];
+        if (!children) {
+          children = await Drive.listFolders(top.id);
+          this.treeCache[top.id] = children;
+        }
+        for (const sub of children) {
+          allFolders.push(sub);
+          let subChildren = this.treeCache[sub.id];
+          if (!subChildren) {
+            subChildren = await Drive.listFolders(sub.id);
+            this.treeCache[sub.id] = subChildren;
+          }
+          for (const subsub of subChildren) {
+            allFolders.push(subsub);
+          }
+        }
+        scanned++;
+        if (bar) bar.style.width = Math.round((scanned / totalTop) * 50) + '%';
+      }
+    } catch (e) { console.error('Lucky scan error:', e); }
+
+    if (allFolders.length === 0) { area.innerHTML = ''; return; }
+
+    if (status) status.textContent = '추천 선별 중...';
+    if (bar) bar.style.width = '50%';
+
+    const filtered = allFolders.filter(f => f.name !== 'RIFE');
+    // Fisher-Yates shuffle for true randomness
+    for (let i = filtered.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+    }
+    const shuffled = filtered.slice(0, 20);
+    const allImages = [];
+    const allVideos = [];
+    let loaded = 0;
+
+    const results = await Promise.allSettled(shuffled.map(async folder => {
+      const indexId = await Drive.findFile('_index.enc', folder.id);
+      if (!indexId) { loaded++; return []; }
+      const files = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
+      loaded++;
+      if (bar) bar.style.width = Math.round(50 + (loaded / shuffled.length) * 50) + '%';
+      return files.filter(f => !this.hiddenSet.has(f.origDriveId)).map(f => ({ ...f, _folderId: folder.id, _folderName: folder.name }));
+    }));
+
+    for (const r of results) {
+      if (r.status !== 'fulfilled') continue;
+      for (const entry of r.value) {
+        if (entry.type?.startsWith('video/')) allVideos.push(entry);
+        else allImages.push(entry);
+      }
+    }
+
+    const pickRandom = (arr, n) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      return a.slice(0, n);
+    };
+    const pickedImages = pickRandom(allImages, 20);
+    const pickedVideos = pickRandom(allVideos, 20);
+
+    this._luckyCache = { images: pickedImages, videos: pickedVideos };
+    this._luckyDate = today;
+
+    // Save to localStorage
+    try { localStorage.setItem('sg_lucky', JSON.stringify({ date: today, images: pickedImages, videos: pickedVideos })); } catch {}
+
+    this._renderLuckyFromCache(area);
+  },
+
+  _renderLuckyFromCache(area) {
+    const { images, videos } = this._luckyCache;
+    let h = '';
+    if (images.length > 0) {
+      h += `<div class="lucky-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> 추천 사진</div>`;
+      h += `<div class="lucky-grid" id="luckyImgGrid"></div>`;
+    }
+    if (videos.length > 0) {
+      h += `<div class="lucky-label" style="margin-top:20px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> 추천 영상</div>`;
+      h += `<div class="lucky-grid" id="luckyVidGrid"></div>`;
+    }
+    if (!images.length && !videos.length) {
+      h = '<div style="color:var(--text2);font-size:13px;">추천할 파일이 없습니다.</div>';
+    }
+    area.innerHTML = h;
+    this._renderLuckyItems('luckyImgGrid', images, false);
+    this._renderLuckyItems('luckyVidGrid', videos, true);
+  },
+
+  _renderLuckyItems(gridId, items, isVideo) {
+    const grid = document.getElementById(gridId);
+    if (!grid || !items.length) return;
+
+    for (const item of items) {
+      const el = document.createElement('div');
+      el.className = 'lucky-item';
+      el.innerHTML = `<div style="width:100%;height:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>`;
+      if (isVideo) el.innerHTML += `<div class="li-vid">▶</div>`;
+      if (this.favSet.has(item.origDriveId)) el.innerHTML += `<div class="fav-badge">❤</div>`;
+      el.innerHTML += `<div class="li-badge">${this.esc(item._folderName)}</div>`;
+
+      el.onclick = () => this.openLuckyItem(item);
+      grid.appendChild(el);
+
+      // Load thumbnail
+      if (item.thumbDriveId) {
+        this.loadThumbInto(item.thumbDriveId, el);
+      }
+    }
+  },
+
+  // ===== RANDOM 1000 =====
+  async loadRandom1000(force) {
+    const area = document.getElementById('r1000Area');
+    if (!area) return;
+
+    const today = new Date().toDateString();
+
+    if (!force && this._r1000Cache && this._r1000Date === today) {
+      this._renderR1000Preview(area);
+      return;
+    }
+
+    if (!force) {
+      try {
+        const stored = localStorage.getItem('sg_r1000');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.date === today) {
+            this._r1000Cache = parsed.items;
+            this._r1000Date = today;
+            this._renderR1000Preview(area);
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    area.innerHTML = `<div style="display:flex;align-items:center;gap:10px;">
+      <span style="color:var(--text2);font-size:13px;" id="r1000Status">폴더 스캔 중...</span>
+      <div style="flex:1;max-width:200px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden">
+        <div id="r1000Bar" style="height:100%;width:0%;background:#AF52DE;border-radius:2px;transition:width 0.2s"></div>
+      </div>
+    </div>`;
+    const bar = document.getElementById('r1000Bar');
+    const status = document.getElementById('r1000Status');
+
+    // Scan all folders
+    const allFolders = [];
+    try {
+      let rootChildren = this.treeCache[this.rootDriveId];
+      if (!rootChildren) {
+        rootChildren = await Drive.listFolders(this.rootDriveId);
+        this.treeCache[this.rootDriveId] = rootChildren;
+      }
+      const topFolders = rootChildren.filter(f => f.name !== 'index' && f.name !== 'thumbs' && f.name !== 'files');
+      const totalTop = topFolders.length;
+      let scanned = 0;
+
+      for (const top of topFolders) {
+        allFolders.push(top);
+        let children = this.treeCache[top.id];
+        if (!children) {
+          children = await Drive.listFolders(top.id);
+          this.treeCache[top.id] = children;
+        }
+        for (const sub of children) {
+          allFolders.push(sub);
+          let subChildren = this.treeCache[sub.id];
+          if (!subChildren) {
+            subChildren = await Drive.listFolders(sub.id);
+            this.treeCache[sub.id] = subChildren;
+          }
+          for (const subsub of subChildren) { allFolders.push(subsub); }
+        }
+        scanned++;
+        if (bar) bar.style.width = Math.round((scanned / totalTop) * 30) + '%';
+      }
+    } catch (e) { console.error('R1000 scan error:', e); }
+
+    if (allFolders.length === 0) { area.innerHTML = ''; return; }
+
+    if (status) status.textContent = '인덱스 로딩 중...';
+    if (bar) bar.style.width = '30%';
+
+    // Always include video-likely folders, then fill with random
+    const filtered = allFolders.filter(f => f.name !== 'RIFE');
+    const videoFolders = filtered.filter(f => f.name === '1.Landscape' || f.name === '2.Portrait');
+    const otherFolders = filtered.filter(f => f.name !== '1.Landscape' && f.name !== '2.Portrait');
+    const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+    const picked = [...videoFolders, ...shuffle(otherFolders).slice(0, 58)];
+    const allImages = [];
+    const allVideos = [];
+    let loaded = 0;
+
+    const results = await Promise.allSettled(picked.map(async folder => {
+      const indexId = await Drive.findFile('_index.enc', folder.id);
+      if (!indexId) { loaded++; return []; }
+      const files = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
+      loaded++;
+      if (bar) bar.style.width = Math.round(30 + (loaded / picked.length) * 70) + '%';
+      return files.filter(f => !this.hiddenSet.has(f.origDriveId)).map(f => ({ ...f, _folderId: folder.id, _folderName: folder.name }));
+    }));
+
+    for (const r of results) {
+      if (r.status !== 'fulfilled') continue;
+      for (const entry of r.value) {
+        if (entry.type?.startsWith('video/')) allVideos.push(entry);
+        else allImages.push(entry);
+      }
+    }
+
+    // Fisher-Yates shuffle and pick
+    const pickedImages = shuffle(allImages).slice(0, 600);
+    const pickedVideos = shuffle(allVideos).slice(0, 400);
+
+    // Interleave: mix images and videos randomly
+    const combined = shuffle([...pickedImages, ...pickedVideos]);
+
+    this._r1000Cache = combined;
+    this._r1000Date = today;
+
+    try { localStorage.setItem('sg_r1000', JSON.stringify({ date: today, items: combined })); } catch {}
+
+    this._renderR1000Preview(area);
+  },
+
+  _renderR1000Preview(area) {
+    const items = this._r1000Cache;
+    if (!items || !items.length) { area.innerHTML = '<div style="color:var(--text2);font-size:13px;">데이터 없음</div>'; return; }
+    const imgCount = items.filter(f => !f.type?.startsWith('video/')).length;
+    const vidCount = items.length - imgCount;
+    area.innerHTML = `<div style="color:var(--text2);font-size:12px;margin-bottom:8px;">사진 ${imgCount}개 + 영상 ${vidCount}개</div><div class="lucky-grid" id="r1000Grid"></div>`;
+    const grid = document.getElementById('r1000Grid');
+    if (!grid) return;
+
+    const preview = [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true})).slice(0, 10);
+    for (const item of preview) {
+      const el = document.createElement('div');
+      el.className = 'lucky-item';
+      el.innerHTML = `<div style="width:100%;height:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>`;
+      if (item.type?.startsWith('video/')) el.innerHTML += `<div class="li-vid">▶</div>`;
+      el.innerHTML += `<div class="li-badge">${this.esc(item._folderName || '')}</div>`;
+      el.onclick = () => this.openRandom1000();
+      grid.appendChild(el);
+      if (item.thumbDriveId) this.loadThumbInto(item.thumbDriveId, el);
+    }
+  },
+
+  openRandom1000() {
+    if (!this._r1000Cache || !this._r1000Cache.length) return;
+    this._favMode = false;
+    this._trashMode = false;
+    this.navStack = [{ id: '__random1000__', name: 'Random 1000' }];
+    this.currentFolderId = '__random1000__';
+
+    this.stopSlideshow(true);
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    this.preloadCache.forEach(u => URL.revokeObjectURL(u));
+    this.preloadCache.clear();
+    this._thumbQueue = [];
+    this.shuffled = false;
+    this.selectedSet.clear(); this._lastSelectedIdx = -1;
+    this.originalFiles = [];
+
+    this.showScreen('mainScreen');
+    this.renderBreadcrumb();
+    if (!this._skipHistory) { this._saveScrollToHistory(); history.pushState({ view: 'random1000' }, ''); }
+
+    this.currentFiles = [...this._r1000Cache].sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+    this.originalFiles = [...this.currentFiles];
+    this._currentSort = 'name_asc';
+
+    const area = document.getElementById('contentArea');
+    const toolbar = document.getElementById('toolbar');
+    toolbar.style.display = 'flex';
+    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    const nameArrow = document.getElementById('sortNameArrow');
+    const dateArrow = document.getElementById('sortDateArrow');
+    if (nameArrow) nameArrow.textContent = '↑';
+    if (dateArrow) dateArrow.textContent = '↓';
+
+    // Add filter buttons
+    this._orientFilter = 'all';
+    let filterDiv = document.getElementById('favFilterDiv');
+    if (!filterDiv) {
+      filterDiv = document.createElement('div');
+      filterDiv.id = 'favFilterDiv';
+      filterDiv.className = 'fav-filter';
+      filterDiv.innerHTML = this._getFilterHTML();
+      toolbar.insertBefore(filterDiv, toolbar.querySelector('.spacer'));
+    } else {
+      filterDiv.style.display = 'flex';
+      filterDiv.innerHTML = this._getFilterHTML();
+    }
+
+    area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
+    this.renderGallery();
+  },
+
+  async loadThumbInto(driveId, el) {
+    if (!driveId) return;
+    this._thumbQueue.push({ driveId, el, isPreview: true });
+    this._processThumbQueue();
+  },
+
+  async openLuckyItem(item) {
+    // Navigate to the folder, then open the file in lightbox
+    const stack = this._buildNavStack(item._folderId, this.rootDriveId);
+    this.navStack = stack;
+    await this.navTo(item._folderId, item._folderName);
+
+    // Find file index in currentFiles
+    const idx = this.currentFiles.findIndex(f => f.origDriveId === item.origDriveId);
+    if (idx >= 0) {
+      await this.openLightbox(idx);
+    }
+  },
+
+  async goToFileFolder(f) {
+    if (!f._folderId) return;
+    this.closeLightbox(true);
+    const stack = this._buildNavStack(f._folderId, this.rootDriveId);
+    this.navStack = stack;
+    await this.navTo(f._folderId, f._folderName);
+    // Scroll to the file in grid
+    const idx = this.currentFiles.findIndex(item => item.origDriveId === f.origDriveId);
+    if (idx >= 0) {
+      this.scrollToItem(idx);
+    }
+  },
+
+  // ===== HUD =====
+  _hudTimer: null,
+  showHud(icon, title, sub) {
+    const hud = document.getElementById('lbHud');
+    if (!hud) return;
+    hud.innerHTML = `<div class="hud-icon">${icon}</div><div class="hud-title">${title}</div>${sub ? `<div class="hud-sub">${sub}</div>` : ''}`;
+    hud.classList.add('show');
+    clearTimeout(this._hudTimer);
+    this._hudTimer = setTimeout(() => hud.classList.remove('show'), 1200);
+  },
+
+  // ===== HELPERS =====
+  _stopAllMedia() {
+    // Stop DOM videos
+    document.querySelectorAll('#lbContent video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
+    // Stop any orphan videos (created but not appended to DOM)
+    this._createdVideos.forEach(v => { try { v.pause(); v.removeAttribute('src'); v.load(); } catch {} });
+    this._createdVideos.clear();
+  },
+
+  _playAllMedia() {
+    document.querySelectorAll('#lbContent video').forEach(v => v.play().catch(()=>{}));
+  },
+
+  _layoutMultiView(c) {
+    if (this.viewCount <= 1) return;
+    const wraps = c.querySelectorAll('.lb-media-wrap');
+    if (!wraps.length) return;
+    const ch = c.offsetHeight;
+    const cw = c.offsetWidth;
+    const gap = this.viewCount === 2 ? 4 : 3;
+    const availW = cw - gap * (wraps.length - 1);
+
+    let totalNatW = 0;
+    const natWidths = [];
+    wraps.forEach(wrap => {
+      const media = wrap.querySelector('img, video');
+      const nw = media.naturalWidth || media.videoWidth || 1;
+      const nh = media.naturalHeight || media.videoHeight || 1;
+      const natW = ch * (nw / nh);
+      natWidths.push(natW);
+      totalNatW += natW;
+    });
+
+    const scale = Math.min(1, availW / totalNatW);
+    wraps.forEach((wrap, i) => {
+      wrap.style.flex = 'none';
+      wrap.style.width = Math.floor(natWidths[i] * scale) + 'px';
+    });
+  },
+
+  scrollToItem(idx) {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
+
+    // Already loaded — just scroll
+    if (idx < this._galleryLoaded) {
+      const item = grid.querySelector(`[data-idx="${idx}"]`);
+      if (item) requestAnimationFrame(() => item.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      return;
+    }
+
+    // Small gap (< 300) — load batches normally
+    if (idx < this._galleryLoaded + 300) {
+      while (idx >= this._galleryLoaded && this._galleryLoaded < this.currentFiles.length) {
+        this._galleryLoadBatch();
+      }
+      const item = grid.querySelector(`[data-idx="${idx}"]`);
+      if (item) requestAnimationFrame(() => item.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      return;
+    }
+
+    // Large jump — spacer approach
+    this._jumpToItem(idx);
+  },
+
+  _jumpToItem(idx) {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
+
+    // Clear everything
+    grid.innerHTML = '';
+    this._thumbQueue = [];
+    this._lastRenderedMonth = null;
+
+    const buffer = this._isMobile ? 50 : 100;
+    const BATCH = this._isMobile ? 30 : 50;
+    const startIdx = Math.max(0, idx - buffer);
+
+    // Track spacer range
+    this._spacerEndIdx = startIdx; // items 0..(startIdx-1) are in spacer
+
+    // Calculate spacer height for skipped items
+    if (startIdx > 0) {
+      const gap = 8;
+      const cols = Math.max(1, Math.floor((grid.clientWidth + gap) / (this.gridSize + gap)));
+      const rowH = this.gridSize + gap;
+      const skipRows = Math.ceil(startIdx / cols);
+      const spacer = document.createElement('div');
+      spacer.className = 'grid-spacer';
+      spacer.style.cssText = `grid-column:1/-1;height:${skipRows * rowH}px`;
+      grid.appendChild(spacer);
+
+      // Observer: when spacer becomes visible, load items upward
+      this._spacerObs = new IntersectionObserver(entries => {
+        if (!entries[0].isIntersecting) return;
+        this._loadUpward();
+      }, { root: document.getElementById('contentScroll'), rootMargin: '200px' });
+      this._spacerObs.observe(spacer);
+    }
+
+    // Load items from startIdx onward
+    this._galleryLoaded = startIdx;
+    const targetEnd = Math.min(idx + buffer, this.currentFiles.length);
+    while (this._galleryLoaded < targetEnd && this._galleryLoaded < this.currentFiles.length) {
+      this._galleryLoadBatch();
+    }
+
+    // Scroll to target
+    const item = grid.querySelector(`[data-idx="${idx}"]`);
+    if (item) requestAnimationFrame(() => item.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  },
+
+  _loadUpward() {
+    const grid = document.getElementById('galleryGrid');
+    const spacer = grid?.querySelector('.grid-spacer');
+    if (!spacer || this._spacerEndIdx <= 0) return;
+
+    const BATCH = this._isMobile ? 30 : 50;
+    const gap = 8;
+    const cols = Math.max(1, Math.floor((grid.clientWidth + gap) / (this.gridSize + gap)));
+    const rowH = this.gridSize + gap;
+
+    // Load one batch upward
+    const loadFrom = Math.max(0, this._spacerEndIdx - BATCH);
+    const loadTo = this._spacerEndIdx;
+
+    const frag = document.createDocumentFragment();
+    const toObserve = [];
+    const showDateSep = this._currentSort === 'date_asc' || this._currentSort === 'date_desc';
+    let prevMonth = null;
+    for (let i = loadFrom; i < loadTo; i++) {
+      const file = this.currentFiles[i];
+      if (!file) continue;
+      // Date separator
+      if (showDateSep && file.mtime) {
+        const d = new Date(file.mtime);
+        const monthKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        if (monthKey !== prevMonth) {
+          prevMonth = monthKey;
+          const sep = document.createElement('div');
+          sep.className = 'date-sep';
+          sep.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${d.getFullYear()}년 ${d.getMonth()+1}월`;
+          frag.appendChild(sep);
+        }
+      }
+      const el = document.createElement('div');
+      el.className = 'gallery-item';
+      el.dataset.idx = i;
+      el.onclick = (e) => {
+        if (e.target.closest('.sel-check')) return;
+        this.openLightbox(i);
+      };
+      const cached = this.thumbCache.get(file.thumbDriveId);
+      let ih = cached ? `<img src="${cached}">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
+      if (file.type?.startsWith('video/')) ih += `<div class="vid-badge">▶</div>`;
+      if (this.favSet.has(file.origDriveId)) ih += `<div class="fav-badge">❤</div>`;
+      const sizeStr = file.size ? (file.size < 1048576 ? (file.size/1024).toFixed(0)+'KB' : (file.size/1048576).toFixed(1)+'MB') : '';
+      const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
+      ih += `<div class="hover-info"><div class="hi-name">${this.esc(file.name)}</div><div class="hi-size">${sizeStr}${dateStr ? '  ·  ' + dateStr : ''}</div></div>`;
+      ih += `<div class="sel-check" onclick="event.stopPropagation();app.toggleSelect(${i},event.shiftKey)"></div>`;
+      el.innerHTML = ih;
+      if (!cached) { el.dataset.thumbId = file.thumbDriveId; toObserve.push(el); }
+      frag.appendChild(el);
+    }
+
+    // Insert after spacer (before existing items)
+    spacer.after(frag);
+    for (const el of toObserve) this._thumbObserver.observe(el);
+
+    // Remove duplicate date separator between upward batch and existing items
+    if (showDateSep && prevMonth) {
+      // Find the first existing element after our inserted items
+      const allItems = grid.querySelectorAll('.gallery-item, .date-sep');
+      for (const node of allItems) {
+        if (node.classList.contains('gallery-item') && parseInt(node.dataset.idx) >= loadTo) {
+          // Check the element right before this first existing item
+          const prev = node.previousElementSibling;
+          if (prev && prev.classList.contains('date-sep')) {
+            // Check month by looking at the first existing item's month
+            const existFile = this.currentFiles[parseInt(node.dataset.idx)];
+            if (existFile?.mtime) {
+              const ed = new Date(existFile.mtime);
+              const existMonth = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}`;
+              if (existMonth === prevMonth) prev.remove();
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // Update spacer
+    this._spacerEndIdx = loadFrom;
+    if (this._spacerEndIdx <= 0) {
+      // Remove spacer entirely
+      if (this._spacerObs) this._spacerObs.disconnect();
+      spacer.remove();
+    } else {
+      const skipRows = Math.ceil(this._spacerEndIdx / cols);
+      spacer.style.height = `${skipRows * rowH}px`;
+    }
+  },
+  showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); },
+  showError(m) { const e=document.getElementById('loginError'); e.textContent=m; e.style.display='block'; },
+  toast(m) {
+    // Show centered toast inside lightbox
+    if (document.getElementById('lightbox').classList.contains('active')) {
+      const lt = document.getElementById('lbToast');
+      if (lt) { lt.textContent = m; lt.style.opacity = '1'; clearTimeout(lt._timer); lt._timer = setTimeout(() => lt.style.opacity = '0', 1500); }
+      return;
+    }
+    const t = document.getElementById('toast');
+    t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+  },
+  lbRandom() {
+    if (this.currentFiles.length <= 1) return;
+    let n; do { n = Math.floor(Math.random() * this.currentFiles.length); } while (n === this.lbIndex);
+    if (this.ssRunning) { clearTimeout(this.ssTimer); this.ssTimer = null; }
+    this.lbIndex = n;
+    this.showLBItem(n).then(() => { if (this.ssRunning) this.ssScheduleNext(); });
+  },
+
+  // ===== SORT =====
+  _currentSort: 'date_asc',
+
+  toggleNameSort() {
+    const newMode = this._currentSort === 'name_asc' ? 'name_desc' : 'name_asc';
+    this.sortFiles(newMode);
+  },
+
+  toggleSizeSort() {
+    const newMode = this._currentSort === 'size_asc' ? 'size_desc' : 'size_asc';
+    this.sortFiles(newMode);
+  },
+
+  toggleDateSort() {
+    const newMode = this._currentSort === 'date_desc' ? 'date_asc' : 'date_desc';
+    this.sortFiles(newMode);
+  },
+
+  sortFiles(mode) {
+    if (!this.originalFiles.length) {
+      this.originalFiles = [...this.currentFiles];
+    }
+
+    switch (mode) {
+      case 'name_asc':
+        this.currentFiles = [...this.originalFiles].sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric:true}));
+        break;
+      case 'name_desc':
+        this.currentFiles = [...this.originalFiles].sort((a, b) => b.name.localeCompare(a.name, undefined, {numeric:true}));
+        break;
+      case 'size_asc':
+        this.currentFiles = [...this.originalFiles].sort((a, b) => (a.size || 0) - (b.size || 0));
+        break;
+      case 'size_desc':
+        this.currentFiles = [...this.originalFiles].sort((a, b) => (b.size || 0) - (a.size || 0));
+        break;
+      case 'date_asc':
+        this.currentFiles = [...this.originalFiles].sort((a, b) => {
+          const at = a.mtime || 0, bt = b.mtime || 0;
+          if (!at && !bt) return 0;
+          if (!at) return 1;
+          if (!bt) return -1;
+          return at - bt;
+        });
+        break;
+      case 'date_desc':
+        this.currentFiles = [...this.originalFiles].sort((a, b) => {
+          const at = a.mtime || 0, bt = b.mtime || 0;
+          if (!at && !bt) return 0;
+          if (!at) return 1;
+          if (!bt) return -1;
+          return bt - at;
+        });
+        break;
+      case 'shuffle':
+        this.currentFiles = [...this.originalFiles];
+        for (let i = this.currentFiles.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [this.currentFiles[i], this.currentFiles[j]] = [this.currentFiles[j], this.currentFiles[i]];
+        }
+        break;
+    }
+    this._currentSort = mode;
+    this.shuffled = (mode === 'shuffle');
+    this.renderGallery();
+
+    // Update button arrows
+    const nameArrow = document.getElementById('sortNameArrow');
+    const sizeArrow = document.getElementById('sortSizeArrow');
+    const dateArrow = document.getElementById('sortDateArrow');
+    if (nameArrow) nameArrow.textContent = this._currentSort === 'name_desc' ? '↓' : '↑';
+    if (sizeArrow) sizeArrow.textContent = this._currentSort === 'size_desc' ? '↓' : '↑';
+    if (dateArrow) dateArrow.textContent = this._currentSort === 'date_asc' ? '↑' : '↓';
+
+    const labels = { name_asc: '이름 ↑', name_desc: '이름 ↓', size_asc: '크기 ↑', size_desc: '크기 ↓', date_asc: '날짜 ↑ (오래된순)', date_desc: '날짜 ↓ (최신순)', shuffle: '🔀 셔플' };
+    this.toast(`정렬: ${labels[mode]}`);
+  },
+
+  // ===== MULTI-SELECT =====
+  toggleSelect(idx, shiftKey) {
+    const file = this.currentFiles[idx];
+    if (!file) return;
+
+    if (shiftKey && this._lastSelectedIdx >= 0) {
+      const from = Math.min(this._lastSelectedIdx, idx);
+      const to = Math.max(this._lastSelectedIdx, idx);
+      for (let i = from; i <= to; i++) {
+        const f = this.currentFiles[i];
+        if (f) this.selectedSet.add(f.origDriveId);
+      }
+    } else {
+      if (this.selectedSet.has(file.origDriveId)) {
+        this.selectedSet.delete(file.origDriveId);
+      } else {
+        this.selectedSet.add(file.origDriveId);
+      }
+    }
+    this._lastSelectedIdx = idx;
+    this._updateSelectionUI();
+  },
+
+  clearSelection() {
+    this.selectedSet.clear();
+    this._lastSelectedIdx = -1;
+    this._updateSelectionUI();
+  },
+
+  _updateSelectionUI() {
+    // Update grid items
+    document.querySelectorAll('#galleryGrid .gallery-item').forEach(el => {
+      const idx = parseInt(el.dataset.idx);
+      const file = this.currentFiles[idx];
+      if (file) el.classList.toggle('selected', this.selectedSet.has(file.origDriveId));
+    });
+    // Show/hide batch actions
+    const ba = document.getElementById('batchActions');
+    const count = this.selectedSet.size;
+    if (ba) {
+      ba.classList.toggle('show', count > 0);
+      document.getElementById('batchCount').textContent = count > 0 ? `${count}개 선택` : '';
+    }
+  },
+
+  batchFavAdd() {
+    let added = 0;
+    for (const id of this.selectedSet) {
+      if (this.favSet.has(id)) continue;
+      const f = this.currentFiles.find(x => x.origDriveId === id);
+      if (!f) continue;
+      this.favSet.add(id);
+      this.favData.push({
+        origDriveId: f.origDriveId, thumbDriveId: f.thumbDriveId,
+        name: f.name, type: f.type, size: f.size, mtime: f.mtime,
+        _folderId: f._folderId || this.currentFolderId,
+        _folderName: f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : '')
+      });
+      added++;
+    }
+    this.saveFavorites();
+    this.clearSelection();
+    this.updateFavBadges();
+    this.toast(`즐겨찾기 ${added}개 추가`);
+  },
+
+  batchFavRemove() {
+    let removed = 0;
+    for (const id of this.selectedSet) {
+      if (!this.favSet.has(id)) continue;
+      this.favSet.delete(id);
+      this.favData = this.favData.filter(d => d.origDriveId !== id);
+      removed++;
+    }
+    this.saveFavorites();
+    this.clearSelection();
+    this.updateFavBadges();
+    this.toast(`즐겨찾기 ${removed}개 해제`);
+  },
+
+  batchDelete() {
+    const ids = [...this.selectedSet];
+    for (const id of ids) {
+      const f = this.currentFiles.find(x => x.origDriveId === id);
+      if (!f) continue;
+      this.hiddenSet.add(id);
+      this.hiddenData.push({
+        origDriveId: f.origDriveId, thumbDriveId: f.thumbDriveId,
+        name: f.name, type: f.type, size: f.size,
+        _folderId: f._folderId || this.currentFolderId,
+        _folderName: f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : ''),
+        _hiddenAt: Date.now()
+      });
+      // Also remove from favorites
+      if (this.favSet.has(id)) {
+        this.favSet.delete(id);
+        this.favData = this.favData.filter(d => d.origDriveId !== id);
+      }
+    }
+    this.currentFiles = this.currentFiles.filter(f => !this.selectedSet.has(f.origDriveId));
+    if (this.originalFiles.length) {
+      this.originalFiles = this.originalFiles.filter(f => !this.selectedSet.has(f.origDriveId));
+    }
+    this.saveHidden();
+    this.saveFavorites();
+    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    const count = ids.length;
+    this.clearSelection();
+    this.renderGallery();
+    this.toast(`${count}개 삭제됨`);
+  },
+
+  // ===== FAVORITES VIEW =====
+  openFavorites() {
+    this._favMode = true;
+    this._trashMode = false;
+    this._favFilter = 'all';
+    this.navStack = [{ id: '__favorites__', name: '❤ 즐겨찾기' }];
+    this.currentFolderId = '__favorites__';
+
+    this.stopSlideshow(true);
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    this.preloadCache.forEach(u => URL.revokeObjectURL(u));
+    this.preloadCache.clear();
+    this._thumbQueue = [];
+    this.shuffled = false;
+    this.selectedSet.clear(); this._lastSelectedIdx = -1;
+    this.originalFiles = [];
+
+    this.showScreen('mainScreen');
+    this.renderBreadcrumb();
+    if (!this._skipHistory) { this._saveScrollToHistory(); history.pushState({ view: 'favorites' }, ''); }
+
+    const allFavFiles = [...this.favData].reverse();
+    this.currentFiles = allFavFiles;
+    this.originalFiles = [...allFavFiles];
+
+    const area = document.getElementById('contentArea');
+    const toolbar = document.getElementById('toolbar');
+    toolbar.style.display = 'flex';
+    document.getElementById('fileCount').textContent = `${allFavFiles.length.toLocaleString()}개 파일`;
+
+    // Add filter buttons to toolbar (before spacer)
+    this._orientFilter = 'all';
+    let filterDiv = document.getElementById('favFilterDiv');
+    if (!filterDiv) {
+      filterDiv = document.createElement('div');
+      filterDiv.id = 'favFilterDiv';
+      filterDiv.className = 'fav-filter';
+      filterDiv.innerHTML = this._getFilterHTML();
+      toolbar.insertBefore(filterDiv, toolbar.querySelector('.spacer'));
+    } else {
+      filterDiv.style.display = 'flex';
+      filterDiv.innerHTML = this._getFilterHTML();
+    }
+
+    area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
+    this.renderGallery();
+  },
+
+  _getFilterHTML() {
+    return `<button class="active" data-filter="type" onclick="app.filterType('all')">전체</button><button data-filter="type" onclick="app.filterType('image')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> 사진</button><button data-filter="type" onclick="app.filterType('video')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> 영상</button><span style="margin:0 4px;color:var(--border)">│</span><button data-filter="orient" onclick="app.filterOrientation('portrait')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="6" y="3" width="12" height="18" rx="2"/></svg> 세로</button><button data-filter="orient" onclick="app.filterOrientation('landscape')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="3" y="6" width="18" height="12" rx="2"/></svg> 가로</button>`;
+  },
+
+  _isPortrait(f) {
+    const n = f._folderName || '';
+    return /^\d+$/.test(n) || n.startsWith('Soft_') || n === '2.Portrait';
+  },
+
+  _isLandscape(f) {
+    const n = f._folderName || '';
+    return /^[Ww]ide_/.test(n) || n === '1.Landscape';
+  },
+
+  filterType(mode) {
+    this._favFilter = mode;
+    this._applyFilters();
+  },
+
+  filterOrientation(mode) {
+    // Toggle: clicking same orientation deactivates
+    this._orientFilter = this._orientFilter === mode ? 'all' : mode;
+    this._applyFilters();
+  },
+
+  // Legacy alias
+  filterFavorites(mode) { this.filterType(mode); },
+
+  _applyFilters() {
+    let source;
+    if (this.currentFolderId === '__favorites__') {
+      source = [...this.favData].reverse();
+    } else if (this.currentFolderId === '__random1000__') {
+      source = [...this._r1000Cache];
+    } else {
+      source = [...this.originalFiles];
+    }
+
+    // Type filter
+    if (this._favFilter === 'image') {
+      source = source.filter(f => !f.type?.startsWith('video/'));
+    } else if (this._favFilter === 'video') {
+      source = source.filter(f => f.type?.startsWith('video/'));
+    }
+
+    // Orientation filter
+    if (this._orientFilter === 'portrait') {
+      source = source.filter(f => this._isPortrait(f));
+    } else if (this._orientFilter === 'landscape') {
+      source = source.filter(f => this._isLandscape(f));
+    }
+
+    this.currentFiles = source;
+    this.originalFiles = [...source];
+    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+
+    // Update type button states
+    document.querySelectorAll('#favFilterDiv [data-filter="type"]').forEach(b => b.classList.remove('active'));
+    const typeIdx = { all: 0, image: 1, video: 2 };
+    const typeBtns = document.querySelectorAll('#favFilterDiv [data-filter="type"]');
+    if (typeBtns[typeIdx[this._favFilter]]) typeBtns[typeIdx[this._favFilter]].classList.add('active');
+
+    // Update orientation button states
+    document.querySelectorAll('#favFilterDiv [data-filter="orient"]').forEach(b => b.classList.remove('active'));
+    if (this._orientFilter !== 'all') {
+      const orientBtns = document.querySelectorAll('#favFilterDiv [data-filter="orient"]');
+      if (this._orientFilter === 'portrait' && orientBtns[0]) orientBtns[0].classList.add('active');
+      if (this._orientFilter === 'landscape' && orientBtns[1]) orientBtns[1].classList.add('active');
+    }
+
+    if (this._currentSort !== 'date_asc') this.sortFiles(this._currentSort);
+    else this.renderGallery();
+  },
+
+  // ===== HIDDEN FILES =====
+  async loadHidden() {
+    try {
+      const fid = await Drive.findFile('_hidden.enc', this.rootDriveId);
+      if (fid) {
+        this.hiddenFileId = fid;
+        const list = await Crypto.decryptJSON(this.key, await Drive.download(fid));
+        // Migration: old format is string array, new format is object array
+        if (list.length > 0 && typeof list[0] === 'string') {
+          this.hiddenSet = new Set(list);
+          this.hiddenData = list.map(id => ({ origDriveId: id, name: '(이전 데이터)', _hiddenAt: 0 }));
+        } else {
+          this.hiddenData = list;
+          this.hiddenSet = new Set(list.map(f => f.origDriveId));
+        }
+        console.log(`숨김 파일 ${this.hiddenSet.size}개 로드됨`);
+      }
+    } catch (e) {
+      console.error('Hidden list load failed:', e);
+    }
+  },
+
+  async saveHidden() {
+    try {
+      const enc = await Crypto.encryptJSON(this.key, this.hiddenData);
+      if (this.hiddenFileId) {
+        await Drive.update(this.hiddenFileId, enc);
+      } else {
+        this.hiddenFileId = await Drive.upload('_hidden.enc', enc, this.rootDriveId);
+      }
+    } catch (e) {
+      console.error('Hidden list save failed:', e);
+      this.toast('숨김 목록 저장 실패');
+    }
+  },
+
+  async hideCurrentFile() {
+    if (!this.currentFiles.length) return;
+    const f = this.currentFiles[this.lbIndex];
+    this.hiddenSet.add(f.origDriveId);
+    this.hiddenData.push({
+      origDriveId: f.origDriveId, thumbDriveId: f.thumbDriveId,
+      name: f.name, type: f.type, size: f.size,
+      _folderId: f._folderId || this.currentFolderId,
+      _folderName: f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : ''),
+      _hiddenAt: Date.now()
+    });
+
+    // Also remove from favorites
+    if (this.favSet.has(f.origDriveId)) {
+      this.favSet.delete(f.origDriveId);
+      this.favData = this.favData.filter(d => d.origDriveId !== f.origDriveId);
+      this.saveFavorites();
+    }
+
+    // Remove from current list
+    this.currentFiles.splice(this.lbIndex, 1);
+    if (this.originalFiles.length) {
+      this.originalFiles = this.originalFiles.filter(of => of.origDriveId !== f.origDriveId);
+    }
+
+    this.saveHidden();
+    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+
+    if (this.currentFiles.length === 0) {
+      this.closeLightbox();
+      this.renderGallery();
+    } else {
+      if (this.lbIndex >= this.currentFiles.length) this.lbIndex = this.currentFiles.length - 1;
+      await this.showLBItem(this.lbIndex);
+      this.renderGallery();
+    }
+    this.toast('숨김 처리됨');
+  },
+
+  // ===== TRASH VIEW =====
+  openTrash() {
+    this._favMode = false;
+    this._trashMode = true;
+    this.navStack = [{ id: '__trash__', name: '휴지통' }];
+    this.currentFolderId = '__trash__';
+
+    this.stopSlideshow(true);
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    this.preloadCache.forEach(u => URL.revokeObjectURL(u));
+    this.preloadCache.clear();
+    this._thumbQueue = [];
+    this.shuffled = false;
+    this.selectedSet.clear(); this._lastSelectedIdx = -1;
+    this.originalFiles = [];
+
+    this.showScreen('mainScreen');
+    this.renderBreadcrumb();
+    if (!this._skipHistory) { this._saveScrollToHistory(); history.pushState({ view: 'trash' }, ''); }
+
+    const trashFiles = [...this.hiddenData].reverse();
+    this.currentFiles = trashFiles;
+    this.originalFiles = [...trashFiles];
+
+    const area = document.getElementById('contentArea');
+    const toolbar = document.getElementById('toolbar');
+    toolbar.style.display = 'flex';
+    document.getElementById('fileCount').textContent = `${trashFiles.length.toLocaleString()}개 파일`;
+
+    // Hide fav filter if visible
+    const filterDiv = document.getElementById('favFilterDiv');
+    if (filterDiv) filterDiv.style.display = 'none';
+
+    area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
+    this.renderTrashGallery();
+  },
+
+  renderTrashGallery() {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (this._thumbObserver) this._thumbObserver.disconnect();
+    this._thumbObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const el = entry.target;
+        const driveId = el.dataset.thumbId;
+        if (driveId) { this.loadThumb(driveId, el); el.removeAttribute('data-thumb-id'); }
+        this._thumbObserver.unobserve(el);
+      }
+    }, { root: document.getElementById('contentScroll'), rootMargin: '200px' });
+
+    for (let i = 0; i < this.currentFiles.length; i++) {
+      const file = this.currentFiles[i];
+      const el = document.createElement('div');
+      el.className = 'gallery-item trash-item';
+
+      const cached = this.thumbCache.get(file.thumbDriveId);
+      if (cached) {
+        el.innerHTML = `<img src="${cached}">`;
+      } else if (file.thumbDriveId) {
+        el.innerHTML = `<div class="loading-placeholder"><div class="spinner"></div></div>`;
+        el.dataset.thumbId = file.thumbDriveId;
+      } else {
+        el.innerHTML = `<div class="loading-placeholder" style="font-size:11px;">미리보기 없음</div>`;
+      }
+
+      if (file.type?.startsWith('video/')) el.innerHTML += `<div class="vid-badge">▶</div>`;
+
+      const sizeStr = file.size ? (file.size < 1048576 ? (file.size/1024).toFixed(0)+'KB' : (file.size/1048576).toFixed(1)+'MB') : '';
+      const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
+      el.innerHTML += `<div class="hover-info"><div class="hi-name">${this.esc(file.name)}</div><div class="hi-size">${sizeStr}${dateStr ? '  ·  ' + dateStr : ''}</div></div>`;
+
+      // Restore button overlay
+      el.innerHTML += `<div class="trash-restore" data-idx="${i}">↩ 복원</div>`;
+      el.onclick = (e) => {
+        if (e.target.closest('.trash-restore')) {
+          this.restoreFile(file);
+          el.remove();
+        }
+      };
+
+      grid.appendChild(el);
+      if (!cached && file.thumbDriveId) this._thumbObserver.observe(el);
+    }
+  },
+
+  restoreFile(f) {
+    this.hiddenSet.delete(f.origDriveId);
+    this.hiddenData = this.hiddenData.filter(d => d.origDriveId !== f.origDriveId);
+    this.currentFiles = this.currentFiles.filter(d => d.origDriveId !== f.origDriveId);
+    this.originalFiles = this.originalFiles.filter(d => d.origDriveId !== f.origDriveId);
+    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this.saveHidden();
+    this.toast('↩ 복원됨');
+  },
+
+  renderTrashPreview() {
+    const grid = document.getElementById('trashGrid');
+    if (!grid || !this.hiddenData.length) return;
+
+    const items = [...this.hiddenData].reverse().slice(0, 10);
+    for (const item of items) {
+      const el = document.createElement('div');
+      el.className = 'lucky-item trash-preview-item';
+      el.innerHTML = `<div style="width:100%;height:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>`;
+      if (item.type?.startsWith('video/')) el.innerHTML += `<div class="li-vid">▶</div>`;
+      el.innerHTML += `<div class="li-badge">${this.esc(item._folderName || '')}</div>`;
+
+      el.onclick = () => this.openTrash();
+      grid.appendChild(el);
+
+      if (item.thumbDriveId) this.loadThumbInto(item.thumbDriveId, el);
+    }
+  },
+
+  // ===== FAVORITES =====
+  async loadFavorites() {
+    try {
+      const fid = await Drive.findFile('_favorites.enc', this.rootDriveId);
+      if (fid) {
+        this.favFileId = fid;
+        this.favData = await Crypto.decryptJSON(this.key, await Drive.download(fid));
+        this.favSet = new Set(this.favData.map(f => f.origDriveId));
+        console.log(`즐겨찾기 ${this.favSet.size}개 로드됨`);
+      }
+    } catch (e) { console.error('Favorites load failed:', e); }
+  },
+
+  async saveFavorites() {
+    try {
+      const enc = await Crypto.encryptJSON(this.key, this.favData);
+      if (this.favFileId) { await Drive.update(this.favFileId, enc); }
+      else { this.favFileId = await Drive.upload('_favorites.enc', enc, this.rootDriveId); }
+    } catch (e) { console.error('Favorites save failed:', e); this.toast('즐겨찾기 저장 실패'); }
+  },
+
+  async _repairFavMtime() {
+    // Find favorites missing mtime
+    const missing = this.favData.filter(f => !f.mtime && f._folderId && !f._folderId.startsWith('__'));
+    if (!missing.length) return;
+
+    // Group by folder
+    const byFolder = {};
+    for (const f of missing) {
+      if (!byFolder[f._folderId]) byFolder[f._folderId] = [];
+      byFolder[f._folderId].push(f);
+    }
+
+    console.log(`즐겨찾기 날짜 복구: ${missing.length}개 (${Object.keys(byFolder).length}개 폴더)`);
+    let repaired = 0;
+
+    for (const [folderId, items] of Object.entries(byFolder)) {
+      try {
+        const indexId = await Drive.findFile('_index.enc', folderId);
+        if (!indexId) continue;
+        const files = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
+        const lookup = new Map(files.map(f => [f.origDriveId, f]));
+
+        for (const fav of items) {
+          const orig = lookup.get(fav.origDriveId);
+          if (orig?.mtime) {
+            fav.mtime = orig.mtime;
+            repaired++;
+          }
+        }
+      } catch (e) { console.warn(`폴더 ${folderId} 인덱스 로드 실패:`, e); }
+    }
+
+    if (repaired > 0) {
+      await this.saveFavorites();
+      console.log(`즐겨찾기 날짜 복구 완료: ${repaired}개`);
+    }
+  },
+
+  toggleFirstFav() {
+    const f = this.currentFiles[this.lbIndex];
+    if (!f) return;
+    const heart = document.querySelector('#lbContent .lb-fav-btn');
+    if (!heart) return;
+    this.toggleFavorite(f, heart);
+  },
+
+  toggleFavorite(f, heartEl) {
+    const isRemoving = this.favSet.has(f.origDriveId);
+    if (isRemoving) {
+      this.favSet.delete(f.origDriveId);
+      this.favData = this.favData.filter(d => d.origDriveId !== f.origDriveId);
+      heartEl.classList.remove('active');
+    } else {
+      this.favSet.add(f.origDriveId);
+      this.favData.push({
+        origDriveId: f.origDriveId, thumbDriveId: f.thumbDriveId,
+        name: f.name, type: f.type, size: f.size, mtime: f.mtime,
+        _folderId: f._folderId || this.currentFolderId,
+        _folderName: f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : '')
+      });
+      heartEl.classList.add('active');
+    }
+    // Trigger center animation
+    const wrap = heartEl.parentElement;
+    const anim = wrap?.querySelector('.lb-heart-anim');
+    if (anim) {
+      anim.classList.remove('pop', 'unpop');
+      void anim.offsetWidth;
+      anim.classList.add(isRemoving ? 'unpop' : 'pop');
+    }
+    // Show fav toast inside this media wrap
+    const favToast = wrap?.querySelector('.lb-fav-toast');
+    if (favToast) {
+      favToast.textContent = isRemoving ? '즐겨찾기 해제' : '❤ 즐겨찾기 추가';
+      favToast.style.opacity = '1';
+      clearTimeout(favToast._timer);
+      favToast._timer = setTimeout(() => favToast.style.opacity = '0', 1500);
+    }
+    this.saveFavorites();
+    this.updateFavBadges();
+  },
+
+  updateFavBadges() {
+    document.querySelectorAll('#galleryGrid .gallery-item').forEach(el => {
+      const existing = el.querySelector('.fav-badge');
+      const idx = parseInt(el.dataset.idx);
+      const file = this.currentFiles[idx];
+      if (file && this.favSet.has(file.origDriveId)) {
+        if (!existing) { const b = document.createElement('div'); b.className='fav-badge'; b.textContent='❤'; el.appendChild(b); }
+      } else {
+        if (existing) existing.remove();
+      }
+    });
+  },
+
+  renderFavGrid() {
+    const grid = document.getElementById('favGrid');
+    if (!grid || !this.favData.length) return;
+
+    // Show most recent first, limit to 10 for preview
+    const items = [...this.favData].reverse().slice(0, 10);
+    for (const item of items) {
+      const el = document.createElement('div');
+      el.className = 'lucky-item';
+      el.innerHTML = `<div style="width:100%;height:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>`;
+      if (item.type?.startsWith('video/')) el.innerHTML += `<div class="li-vid">▶</div>`;
+      el.innerHTML += `<div class="fav-badge">❤</div>`;
+      el.innerHTML += `<div class="li-badge">${this.esc(item._folderName || '')}</div>`;
+
+      el.onclick = () => this.openFavorites();
+      grid.appendChild(el);
+
+      if (item.thumbDriveId) this.loadThumbInto(item.thumbDriveId, el);
+    }
+  },
+
+  // ===== SWIPE =====
+  onTouchStart(e) {
+    this.touchStartX = e.touches[0].clientX;
+    this.touchStartY = e.touches[0].clientY;
+  },
+
+  onTouchEnd(e) {
+    const dx = e.changedTouches[0].clientX - this.touchStartX;
+    const dy = e.changedTouches[0].clientY - this.touchStartY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    // Must be horizontal swipe, min 50px, more horizontal than vertical
+    if (absDx < 50 || absDy > absDx) return;
+
+    if (dx > 0) { this.lbNav(-1); }  // swipe right = previous
+    else { this.lbNav(1); }           // swipe left = next
+  },
+
+  esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+};
+
+// Fullscreen change listener
+document.addEventListener('fullscreenchange', () => {
+  app.updateFSBtn();
+  // Re-layout multi-view after fullscreen transition
+  if (app.viewCount > 1) {
+    setTimeout(() => {
+      const c = document.getElementById('lbContent');
+      if (c) app._layoutMultiView(c);
+    }, 100);
+  }
+});
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', e => {
+  if (document.getElementById('lightbox').classList.contains('active')) {
+    if(e.key==='Escape') {
+      if (document.fullscreenElement) { document.exitFullscreen(); }
+      else { history.back(); }
+    }
+    if(e.key==='ArrowLeft'||e.key==='PageUp') { app.lbNav(-1); }
+    if(e.key==='ArrowRight'||e.key==='PageDown') { app.lbNav(1); }
+    if(e.key==='ArrowUp') { e.preventDefault(); app.lbRandom(); }
+    if(e.key==='ArrowDown') { e.preventDefault(); app.lbRandom(); }
+    if(e.key===' ') { e.preventDefault(); document.querySelectorAll('#lbContent video').forEach(v=>{v.paused?v.play():v.pause();}); }
+    if(e.key==='s'||e.key==='S') { app.toggleSlideshow(); }
+    if(e.key==='f'||e.key==='F'||e.key==='Enter') { e.preventDefault(); app.toggleFullscreen(); }
+    if(e.key==='d'||e.key==='D') { app.setViewCount(app.viewCount === 2 ? 1 : 2); }
+    if(e.key==='t'||e.key==='T') { app.setViewCount(app.viewCount === 3 ? 1 : 3); }
+    if(e.key==='1'||e.code==='Digit1') { app.setViewCount(1); }
+    if(e.key==='2'||e.code==='Digit2') { app.setViewCount(2); }
+    if(e.key==='3'||e.code==='Digit3') { app.setViewCount(3); }
+    if(e.key==='b'||e.key==='B') { app.toggleFirstFav(); }
+    if(e.key==='Delete') { app.hideCurrentFile(); }
+  }
+});
+
+// ===== MOUSE WHEEL =====
+let _wheelLast = 0;
+document.getElementById('lbBody')?.addEventListener('wheel', e => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  const now = Date.now();
+  if (now - _wheelLast < 250) return;
+  _wheelLast = now;
+  e.preventDefault();
+  if (e.deltaY > 0) { app.lbNav(1); }
+  else if (e.deltaY < 0) { app.lbNav(-1); }
+}, { passive: false });
+
+// ===== SWIPE =====
+document.getElementById('lbBody')?.addEventListener('touchstart', e => app.onTouchStart(e), {passive:true});
+document.getElementById('lbBody')?.addEventListener('touchend', e => app.onTouchEnd(e));
+
+// ===== MOUSE BUTTONS =====
+document.getElementById('lbBody')?.addEventListener('mousedown', e => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  if (e.button === 1) { e.preventDefault(); app.toggleFullscreen(); }
+});
+// Prevent middle-click scroll icon
+document.getElementById('lbBody')?.addEventListener('auxclick', e => { if (e.button === 1) e.preventDefault(); });
+
+// ===== FULLSCREEN EDGE NAV =====
+document.getElementById('lightbox')?.addEventListener('mousemove', e => {
+  if (!document.fullscreenElement) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const prev = document.querySelector('.lb-nav.prev');
+  const next = document.querySelector('.lb-nav.next');
+  const top = document.querySelector('.lb-top');
+  const bot = document.querySelector('.lb-bottom');
+  if (prev) prev.classList.toggle('edge-hover', e.clientX < 60);
+  if (next) next.classList.toggle('edge-hover', e.clientX > w - 60);
+  if (top) top.classList.toggle('edge-show', e.clientY < 50);
+  const ssPanelOpen = document.getElementById('ssPanel')?.classList.contains('open');
+  if (bot) bot.classList.toggle('edge-show', e.clientY > h - 50 || ssPanelOpen);
+});
+
+document.getElementById('passwordInput')?.addEventListener('keydown', e => { if(e.key==='Enter') app.login(); });
+
+// Auto-login if password saved in session
+(function() {
+  const savedPw = sessionStorage.getItem('sg_pw');
+  if (savedPw) {
+    document.getElementById('passwordInput').value = savedPw;
+    app.login();
+  }
+})();
+
+// Hide fullscreen button if not supported (iOS Safari)
+if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) {
+  const fsBtn = document.getElementById('lbFSBtn');
+  if (fsBtn) fsBtn.style.display = 'none';
+}
+
+// ===== SCROLL TO TOP BUTTON =====
+(function() {
+  const scroll = document.getElementById('contentScroll');
+  const btn = document.getElementById('scrollTopBtn');
+  if (!scroll || !btn) return;
+  scroll.addEventListener('scroll', () => {
+    btn.classList.toggle('show', scroll.scrollTop > 200);
+  });
+})();
+
+// ===== BROWSER HISTORY =====
+window.addEventListener('popstate', e => {
+  // Lightbox open? Just close it
+  if (document.getElementById('lightbox').classList.contains('active')) {
+    app.closeLightbox();
+    return;
+  }
+  const s = e.state;
+  // No state = initial page, do nothing (or user leaves site)
+  if (!s) return;
+  // Stale lightbox entry (lightbox not open but state says lightbox) → skip
+  if (s.view === 'lightbox') { history.back(); return; }
+  app._skipHistory = true;
+  try {
+    if (s.view === 'folder') {
+      app.navStack = s.navStack || [];
+      app.navTo(s.folderId, s.folderName);
+    } else if (s.view === 'favorites') {
+      app.openFavorites();
+    } else if (s.view === 'random1000') {
+      app.openRandom1000();
+    } else if (s.view === 'trash') {
+      app.openTrash();
+    }
+    // Restore scroll position
+    if (s.restoreIdx != null) {
+      setTimeout(() => app.scrollToItem(s.restoreIdx), 100);
+    } else if (s.restoreScrollTop != null) {
+      // Main page needs longer delay (async content loading)
+      const tryRestore = () => {
+        const scroll = document.getElementById('contentScroll');
+        if (scroll && scroll.scrollHeight > scroll.clientHeight) {
+          scroll.scrollTop = s.restoreScrollTop;
+        } else {
+          setTimeout(tryRestore, 100);
+        }
+      };
+      setTimeout(tryRestore, 200);
+    }
+  } finally {
+    app._skipHistory = false;
+  }
+});
+</script>
+</body>
+</html>
