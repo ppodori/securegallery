@@ -72,6 +72,8 @@ input { font-family: var(--font); outline: none; }
 .toolbar-btn:hover, .sort-btn:hover { transform: translateY(-1px); }
 .sort-btn .sort-icon { font-weight: 700; font-size: 13px; }
 .sort-btn .sort-arrow { font-size: 11px; opacity: 0.7; }
+.sort-btn.active { box-shadow: 0 0 0 1px currentColor; }
+.shuffle-btn.active { box-shadow: 0 0 0 1px currentColor; }
 .shuffle-btn { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
 .shuffle-btn:hover { background: rgba(239, 68, 68, 0.25); }
 .sort-name { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
@@ -673,6 +675,8 @@ const app = {
     this._currentSort = 'date_asc';
     const filterDiv = document.getElementById('favFilterDiv');
     if (filterDiv) filterDiv.style.display = 'none';
+    const sortAddedBtn = document.getElementById('sortAddedBtn');
+    if (sortAddedBtn) sortAddedBtn.style.display = 'none';
     const nameArrow = document.getElementById('sortNameArrow');
     const sizeArrow = document.getElementById('sortSizeArrow');
     const dateArrow = document.getElementById('sortDateArrow');
@@ -2157,20 +2161,39 @@ const app = {
           [this.currentFiles[i], this.currentFiles[j]] = [this.currentFiles[j], this.currentFiles[i]];
         }
         break;
+      case 'added_desc':
+        if (this._favMode) {
+          const favOrder = new Map(this.favData.map((f, i) => [f.origDriveId, i]));
+          this.currentFiles = [...this.originalFiles].sort((a, b) => (favOrder.get(b.origDriveId) ?? 0) - (favOrder.get(a.origDriveId) ?? 0));
+        }
+        break;
+      case 'added_asc':
+        if (this._favMode) {
+          const favOrder2 = new Map(this.favData.map((f, i) => [f.origDriveId, i]));
+          this.currentFiles = [...this.originalFiles].sort((a, b) => (favOrder2.get(a.origDriveId) ?? 0) - (favOrder2.get(b.origDriveId) ?? 0));
+        }
+        break;
     }
     this._currentSort = mode;
     this.shuffled = (mode === 'shuffle');
     this.renderGallery();
 
-    // Update button arrows
+    // Update button arrows and active states
     const nameArrow = document.getElementById('sortNameArrow');
     const sizeArrow = document.getElementById('sortSizeArrow');
     const dateArrow = document.getElementById('sortDateArrow');
     if (nameArrow) nameArrow.textContent = this._currentSort === 'name_desc' ? '↓' : '↑';
     if (sizeArrow) sizeArrow.textContent = this._currentSort === 'size_desc' ? '↓' : '↑';
     if (dateArrow) dateArrow.textContent = this._currentSort === 'date_asc' ? '↑' : '↓';
+    document.querySelectorAll('.shuffle-btn, #sortNameBtn, #sortSizeBtn, #sortDateBtn, #sortAddedBtn').forEach(b => b.classList.remove('active'));
+    const activeMap = { shuffle: '.shuffle-btn', name_asc: '#sortNameBtn', name_desc: '#sortNameBtn', size_asc: '#sortSizeBtn', size_desc: '#sortSizeBtn', date_asc: '#sortDateBtn', date_desc: '#sortDateBtn', added_desc: '#sortAddedBtn', added_asc: '#sortAddedBtn' };
+    const activeEl = document.querySelector(activeMap[mode]);
+    if (activeEl) activeEl.classList.add('active');
+    // Update added arrow
+    const addedArrow = document.getElementById('sortAddedArrow');
+    if (addedArrow) addedArrow.textContent = this._currentSort === 'added_asc' ? '↑' : '↓';
 
-    const labels = { name_asc: '이름 ↑', name_desc: '이름 ↓', size_asc: '크기 ↑', size_desc: '크기 ↓', date_asc: '날짜 ↑ (오래된순)', date_desc: '날짜 ↓ (최신순)', shuffle: '🔀 셔플' };
+    const labels = { name_asc: '이름 ↑', name_desc: '이름 ↓', size_asc: '크기 ↑', size_desc: '크기 ↓', date_asc: '날짜 ↑ (오래된순)', date_desc: '날짜 ↓ (최신순)', shuffle: '🔀 셔플', added_desc: '추가순 ↓ (최신)', added_asc: '추가순 ↑ (오래된순)' };
     this.toast(`정렬: ${labels[mode]}`);
   },
 
@@ -2310,6 +2333,7 @@ const app = {
     const allFavFiles = [...this.favData].reverse();
     this.currentFiles = allFavFiles;
     this.originalFiles = [...allFavFiles];
+    this._currentSort = 'added_desc';
 
     const area = document.getElementById('contentArea');
     const toolbar = document.getElementById('toolbar');
@@ -2328,6 +2352,22 @@ const app = {
     } else {
       filterDiv.style.display = 'flex';
       filterDiv.innerHTML = this._getFilterHTML();
+    }
+    // Add "추가순" sort button (favorites only) — after date button
+    let addedBtn = document.getElementById('sortAddedBtn');
+    if (!addedBtn) {
+      addedBtn = document.createElement('button');
+      addedBtn.id = 'sortAddedBtn';
+      addedBtn.className = 'sort-btn active';
+      addedBtn.style.cssText = 'background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.2);';
+      addedBtn.innerHTML = '<svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg> 추가순 <span class="sort-arrow" id="sortAddedArrow">↓</span>';
+      addedBtn.onclick = () => this.sortFiles(this._currentSort === 'added_desc' ? 'added_asc' : 'added_desc');
+      const dateBtn = document.getElementById('sortDateBtn');
+      if (dateBtn) dateBtn.after(addedBtn);
+      else toolbar.insertBefore(addedBtn, toolbar.querySelector('.spacer'));
+    } else {
+      addedBtn.style.display = '';
+      addedBtn.classList.add('active');
     }
 
     area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
