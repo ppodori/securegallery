@@ -154,8 +154,8 @@ input { font-family: var(--font); outline: none; }
 .lightbox:fullscreen .lb-top.edge-show, .lightbox:fullscreen .lb-bottom.edge-show { opacity: 1; pointer-events: auto; }
 .lightbox:fullscreen .lb-top button { background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); }
 .lightbox:fullscreen .lb-body { position: absolute; inset: 0; }
-.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 24px; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 20; box-shadow: var(--shadow-md); }
-.lb-nav:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.1); }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); background: none; backdrop-filter: none; border: none; color: rgba(255,255,255,0.5); font-size: 36px; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 20; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+.lb-nav:hover { color: rgba(255,255,255,0.9); transform: translateY(-50%) scale(1.15); text-shadow: 0 2px 12px rgba(0,0,0,0.9); }
 .lb-nav.prev { left: 24px; }
 .lb-nav.next { right: 24px; }
 .lightbox:fullscreen .lb-nav { opacity: 0; pointer-events: none; }
@@ -210,7 +210,7 @@ input { font-family: var(--font); outline: none; }
   .content-header { padding: 0 16px; }
   .toolbar { padding: 12px 16px; gap: 8px; }
   .content-scroll { padding: 16px; }
-  .lb-nav { width: 44px; height: 44px; font-size: 20px; }
+  .lb-nav { width: 40px; height: 40px; font-size: 30px; }
   .lb-nav.prev { left: 12px; }
   .lb-nav.next { right: 12px; }
   .header-logo span { display: none; }
@@ -220,7 +220,6 @@ input { font-family: var(--font); outline: none; }
   .lb-top { background: linear-gradient(rgba(0,0,0,0.9), transparent); }
   .lb-bottom { background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
   .ss-panel, .lb-hud, .scroll-top, .toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(24, 24, 27, 0.98); }
-  .lb-nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.6); }
   .lb-fav-toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.75); }
 }
 </style>
@@ -1607,11 +1606,18 @@ const app = {
       h = '<div style="color:var(--text2);font-size:13px;">추천할 파일이 없습니다.</div>';
     }
     area.innerHTML = h;
-    this._renderLuckyItems('luckyImgGrid', images, false);
-    this._renderLuckyItems('luckyVidGrid', videos, true);
+    // Interleave image and video thumb loading so both sections appear together
+    const imgEls = [], vidEls = [];
+    this._renderLuckyItems('luckyImgGrid', images, false, imgEls);
+    this._renderLuckyItems('luckyVidGrid', videos, true, vidEls);
+    const maxLen = Math.max(imgEls.length, vidEls.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (imgEls[i]) this.loadThumbInto(imgEls[i].driveId, imgEls[i].el);
+      if (vidEls[i]) this.loadThumbInto(vidEls[i].driveId, vidEls[i].el);
+    }
   },
 
-  _renderLuckyItems(gridId, items, isVideo) {
+  _renderLuckyItems(gridId, items, isVideo, thumbQueue) {
     const grid = document.getElementById(gridId);
     if (!grid || !items.length) return;
 
@@ -1626,9 +1632,10 @@ const app = {
       el.onclick = () => this.openLuckyItem(item);
       grid.appendChild(el);
 
-      // Load thumbnail
+      // Queue thumbnail for interleaved loading
       if (item.thumbDriveId) {
-        this.loadThumbInto(item.thumbDriveId, el);
+        if (thumbQueue) thumbQueue.push({ driveId: item.thumbDriveId, el });
+        else this.loadThumbInto(item.thumbDriveId, el);
       }
     }
   },
@@ -1758,8 +1765,10 @@ const app = {
     const grid = document.getElementById('r1000Grid');
     if (!grid) return;
 
-    const preview = [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true})).slice(0, 10);
-    for (const item of preview) {
+    const preview = [...items];
+    for (let i = preview.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [preview[i], preview[j]] = [preview[j], preview[i]]; }
+    const previewSlice = preview.slice(0, 10);
+    for (const item of previewSlice) {
       const el = document.createElement('div');
       el.className = 'lucky-item';
       el.innerHTML = `<div style="width:100%;height:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>`;
