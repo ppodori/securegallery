@@ -26,14 +26,14 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; overflow: hidden; -webkit-font-smoothing: antialiased; }
 button { font-family: var(--font); cursor: pointer; border: none; outline: none; background: none; color: var(--text); transition: all 0.2s ease; }
 input { font-family: var(--font); outline: none; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 4px; border: 2px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: #71717a; }
-.screen { display: none; height: 100vh; animation: fadeIn 0.3s ease; }
+.screen { display: none; height: 100vh; height: 100dvh; animation: fadeIn 0.3s ease; }
 .screen.active { display: flex; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 #loginScreen { flex-direction: column; align-items: center; justify-content: center; gap: 32px; background: radial-gradient(circle at 50% -20%, #1e3a8a33, var(--bg) 70%); }
@@ -51,7 +51,7 @@ input { font-family: var(--font); outline: none; }
 .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 #loginError { color: var(--danger); font-size: 13px; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); }
-#mainScreen { flex-direction: row; height: 100vh; }
+#mainScreen { flex-direction: row; height: 100vh; height: 100dvh; }
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
 .content-header { height: var(--header-h); padding: 0 24px; padding-top: env(safe-area-inset-top); display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 10; }
 .header-logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s; }
@@ -223,6 +223,16 @@ input { font-family: var(--font); outline: none; }
   .lb-bottom { background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
   .ss-panel, .lb-hud, .scroll-top, .toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(24, 24, 27, 0.98); }
   .lb-fav-toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.75); }
+  .lucky-title { font-size: 13px; gap: 6px; margin-bottom: 10px; }
+  .lucky-title button { font-size: 11px; padding: 4px 8px; }
+  .lucky-label { font-size: 12px; }
+  .toolbar .file-count { font-size: 11px; }
+  .toolbar-btn, .shuffle-btn, .sort-btn, .fav-filter button { font-size: 11px; padding: 6px 10px; gap: 4px; }
+  .grid-slider label { font-size: 10px; }
+  .grid-slider input[type="range"] { width: 60px; }
+  .grid-slider { padding: 4px 8px; gap: 6px; }
+  .batch-btn { font-size: 11px; padding: 5px 10px; }
+  .batch-count { font-size: 11px; }
 }
 </style>
 </head>
@@ -862,12 +872,6 @@ const app = {
       this.renderTrashPreview();
       this.loadRandom1000();
       this.loadLuckyPicks();
-      // Apply saved grid size to preview grids
-      if (this.gridSize !== 160) {
-        document.querySelectorAll('.lucky-grid').forEach(g => {
-          g.style.gridTemplateColumns = `repeat(auto-fill,minmax(${this.gridSize}px,1fr))`;
-        });
-      }
     }
   },
 
@@ -1041,6 +1045,14 @@ const app = {
     });
     const gridSlider = document.getElementById('gridSlider');
     if (gridSlider) gridSlider.value = v;
+  },
+
+  _applyLuckyGridSize() {
+    if (this.gridSize !== 160) {
+      document.querySelectorAll('.lucky-grid').forEach(g => {
+        g.style.gridTemplateColumns = `repeat(auto-fill,minmax(${this.gridSize}px,1fr))`;
+      });
+    }
   },
 
   // ===== LIGHTBOX =====
@@ -1551,12 +1563,13 @@ const app = {
     if (bar) bar.style.width = '50%';
 
     const filtered = allFolders.filter(f => f.name !== 'RIFE');
-    // Fisher-Yates shuffle for true randomness
-    for (let i = filtered.length - 1; i > 0; i--) {
+    const videoFolders = filtered.filter(f => f.name === '1.Landscape' || f.name === '2.Portrait');
+    const otherFolders = filtered.filter(f => f.name !== '1.Landscape' && f.name !== '2.Portrait');
+    for (let i = otherFolders.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+      [otherFolders[i], otherFolders[j]] = [otherFolders[j], otherFolders[i]];
     }
-    const shuffled = filtered.slice(0, 20);
+    const shuffled = [...videoFolders, ...otherFolders.slice(0, 20 - videoFolders.length)];
     const allImages = [];
     const allVideos = [];
     let loaded = 0;
@@ -1619,6 +1632,7 @@ const app = {
       if (imgEls[i]) this.loadThumbInto(imgEls[i].driveId, imgEls[i].el);
       if (vidEls[i]) this.loadThumbInto(vidEls[i].driveId, vidEls[i].el);
     }
+    this._applyLuckyGridSize();
   },
 
   _renderLuckyItems(gridId, items, isVideo, thumbQueue) {
@@ -1782,6 +1796,7 @@ const app = {
       grid.appendChild(el);
       if (item.thumbDriveId) this.loadThumbInto(item.thumbDriveId, el);
     }
+    this._applyLuckyGridSize();
   },
 
   openRandom1000() {
@@ -2638,6 +2653,7 @@ const app = {
 
       if (item.thumbDriveId) this.loadThumbInto(item.thumbDriveId, el);
     }
+    this._applyLuckyGridSize();
   },
 
   // ===== FAVORITES =====
@@ -2775,6 +2791,7 @@ const app = {
 
       if (item.thumbDriveId) this.loadThumbInto(item.thumbDriveId, el);
     }
+    this._applyLuckyGridSize();
   },
 
   // ===== SWIPE =====
