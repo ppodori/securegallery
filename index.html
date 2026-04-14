@@ -116,6 +116,17 @@ input { font-family: var(--font); outline: none; }
 .batch-count { font-size: 13px; color: var(--accent); font-weight: 700; margin: 0 8px; }
 .date-sep { grid-column: 1/-1; padding: 24px 0 8px; font-size: 15px; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
 .date-sep svg { color: var(--text2); }
+.month-picker-wrap { position: relative; display: inline-flex; }
+.month-picker-btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; background: rgba(34,211,238,0.15); color: #22d3ee; border: 1px solid rgba(34,211,238,0.25); transition: all 0.2s; }
+.month-picker-btn:hover { background: rgba(34,211,238,0.25); transform: translateY(-1px); }
+.month-picker-btn.active { background: rgba(34,211,238,0.25); box-shadow: 0 0 0 1px #22d3ee; }
+.month-picker-btn.filtered { box-shadow: 0 0 0 1px currentColor; }
+.month-picker-panel { display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 195px; max-height: 270px; overflow-y: auto; background: rgba(15,15,18,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px; z-index: 400; box-shadow: 0 8px 32px rgba(0,0,0,0.65); }
+.month-picker-panel.open { display: block; animation: fadeIn 0.15s ease; }
+.month-picker-item { padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text); transition: background 0.15s; }
+.month-picker-item:hover { background: rgba(255,255,255,0.06); }
+.month-picker-item.active { background: rgba(34,211,238,0.15); color: #22d3ee; font-weight: 700; }
+.month-filter-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(34,211,238,0.15); color: #22d3ee; border: 1px solid rgba(34,211,238,0.3); padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
 .scroll-top { position: fixed; bottom: 32px; right: 32px; width: 48px; height: 48px; border-radius: 50%; background: rgba(24, 24, 27, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 200; opacity: 0; transform: translateY(20px); pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: var(--text); box-shadow: var(--shadow-lg); }
 .scroll-top.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .scroll-top:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-3px); }
@@ -227,7 +238,7 @@ input { font-family: var(--font); outline: none; }
   .lucky-title button { font-size: 11px; padding: 4px 8px; }
   .lucky-label { font-size: 12px; }
   .toolbar .file-count { font-size: 11px; }
-  .toolbar-btn, .shuffle-btn, .sort-btn, .fav-filter button { font-size: 11px; padding: 6px 10px; gap: 4px; }
+  .toolbar-btn, .shuffle-btn, .sort-btn, .fav-filter button, .month-picker-btn { font-size: 11px; padding: 6px 10px; gap: 4px; }
   .grid-slider label { font-size: 10px; }
   .grid-slider input[type="range"] { width: 60px; }
   .grid-slider { padding: 4px 8px; gap: 6px; }
@@ -266,6 +277,10 @@ input { font-family: var(--font); outline: none; }
       <button class="sort-btn sort-name" id="sortNameBtn" onclick="app.toggleNameSort()"><span class="sort-icon">A</span> 이름 <span class="sort-arrow" id="sortNameArrow">↑</span></button>
       <button class="sort-btn sort-size" id="sortSizeBtn" onclick="app.toggleSizeSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> 크기 <span class="sort-arrow" id="sortSizeArrow">↑</span></button>
       <button class="sort-btn sort-date" id="sortDateBtn" onclick="app.toggleDateSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 날짜 <span class="sort-arrow" id="sortDateArrow">↑</span></button>
+      <div class="month-picker-wrap">
+        <button class="month-picker-btn" id="monthPickerBtn" onclick="app.toggleMonthPicker()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>연/월</button>
+        <div class="month-picker-panel" id="monthPickerPanel"></div>
+      </div>
       <div class="spacer"></div>
       <div class="batch-actions" id="batchActions">
         <span class="batch-count" id="batchCount"></span>
@@ -490,6 +505,9 @@ const app = {
   _spacerObs: null,
   // Date separator
   _lastRenderedMonth: null,
+  // Month filter
+  _monthFilter: null,
+  _preMonthFiles: [],
 
   _saveScrollToHistory() {
     const scroll = document.getElementById('contentScroll');
@@ -680,6 +698,10 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
+    this._monthFilter = null; this._preMonthFiles = [];
+    const _mChip = document.getElementById('monthFilterChip'); if (_mChip) _mChip.remove();
+    const _mPanel = document.getElementById('monthPickerPanel'); if (_mPanel) _mPanel.classList.remove('open');
+    const _mBtn = document.getElementById('monthPickerBtn'); if (_mBtn) { _mBtn.classList.remove('active'); _mBtn.classList.remove('filtered'); }
     this._favMode = false;
     this._trashMode = false;
     this._currentSort = 'date_asc';
@@ -1467,7 +1489,7 @@ const app = {
     if (!btn) return;
     btn.title = document.fullscreenElement ? '전체화면 해제' : '전체화면';
     btn.innerHTML = document.fullscreenElement
-      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 14h3a2 2 0 0 1 2 2v3m6-5h3a2 2 0 0 0 2-2V9M9 10V7a2 2 0 0 0-2-2H4m11 0h3a2 2 0 0 1 2 2v3"/></svg>'
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>'
       : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
   },
 
@@ -1814,6 +1836,10 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
+    this._monthFilter = null; this._preMonthFiles = [];
+    const _mr1kChip = document.getElementById('monthFilterChip'); if (_mr1kChip) _mr1kChip.remove();
+    const _mr1kPanel = document.getElementById('monthPickerPanel'); if (_mr1kPanel) _mr1kPanel.classList.remove('open');
+    const _mr1kBtn = document.getElementById('monthPickerBtn'); if (_mr1kBtn) { _mr1kBtn.classList.remove('active'); _mr1kBtn.classList.remove('filtered'); }
 
     this.showScreen('mainScreen');
     this.renderBreadcrumb();
@@ -2191,6 +2217,17 @@ const app = {
     }
     this._currentSort = mode;
     this.shuffled = (mode === 'shuffle');
+    // Re-apply month filter after sort
+    if (this._monthFilter) {
+      this._preMonthFiles = [...this.currentFiles];
+      this.originalFiles = this._preMonthFiles;
+      this.currentFiles = this._preMonthFiles.filter(f => {
+        if (!f.mtime) return false;
+        const d = new Date(f.mtime);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === this._monthFilter;
+      });
+      document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    }
     this.renderGallery();
 
     // Update button arrows and active states
@@ -2340,6 +2377,10 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
+    this._monthFilter = null; this._preMonthFiles = [];
+    const _mfChip = document.getElementById('monthFilterChip'); if (_mfChip) _mfChip.remove();
+    const _mfPanel = document.getElementById('monthPickerPanel'); if (_mfPanel) _mfPanel.classList.remove('open');
+    const _mfBtn = document.getElementById('monthPickerBtn'); if (_mfBtn) { _mfBtn.classList.remove('active'); _mfBtn.classList.remove('filtered'); }
 
     this.showScreen('mainScreen');
     this.renderBreadcrumb();
@@ -2553,6 +2594,10 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
+    this._monthFilter = null; this._preMonthFiles = [];
+    const _mtrChip = document.getElementById('monthFilterChip'); if (_mtrChip) _mtrChip.remove();
+    const _mtrPanel = document.getElementById('monthPickerPanel'); if (_mtrPanel) _mtrPanel.classList.remove('open');
+    const _mtrBtn = document.getElementById('monthPickerBtn'); if (_mtrBtn) { _mtrBtn.classList.remove('active'); _mtrBtn.classList.remove('filtered'); }
 
     this.showScreen('mainScreen');
     this.renderBreadcrumb();
@@ -2813,6 +2858,99 @@ const app = {
     else { this.lbNav(1); }           // swipe left = next
   },
 
+  // ===== MONTH FILTER =====
+  toggleMonthPicker() {
+    const panel = document.getElementById('monthPickerPanel');
+    const btn = document.getElementById('monthPickerBtn');
+    if (!panel) return;
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+      panel.classList.remove('open');
+      if (btn) btn.classList.remove('active');
+    } else {
+      this._buildMonthPicker(panel);
+      panel.classList.add('open');
+      if (btn) btn.classList.add('active');
+    }
+  },
+
+  _buildMonthPicker(panel) {
+    const base = this._preMonthFiles.length ? this._preMonthFiles : this.currentFiles;
+    const monthMap = new Map();
+    for (const f of base) {
+      if (!f.mtime) continue;
+      const d = new Date(f.mtime);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if (!monthMap.has(key)) monthMap.set(key, { label: `${d.getFullYear()}년 ${d.getMonth()+1}월`, count: 0 });
+      monthMap.get(key).count++;
+    }
+    const months = [...monthMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    if (!months.length) {
+      panel.innerHTML = '<div style="padding:12px;color:var(--text2);font-size:13px;text-align:center;">날짜 정보 없음</div>';
+      return;
+    }
+    let h = '<div style="padding:4px 8px 6px;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.5px;">연/월 필터</div>';
+    if (this._monthFilter) {
+      h += `<div class="month-picker-item" onclick="app.setMonthFilter(null)" style="color:var(--text2);margin-bottom:4px;border-bottom:1px solid var(--border);border-radius:0;padding-bottom:10px;">
+        <span style="display:flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>전체 보기</span>
+      </div>`;
+    }
+    for (const [key, { label, count }] of months) {
+      const isActive = this._monthFilter === key;
+      h += `<div class="month-picker-item${isActive ? ' active' : ''}" onclick="app.setMonthFilter('${key}')">
+        <span>${label}</span>
+        <span style="font-size:11px;opacity:0.7;">${count.toLocaleString()}개</span>
+      </div>`;
+    }
+    panel.innerHTML = h;
+  },
+
+  setMonthFilter(monthKey) {
+    const base = this._preMonthFiles.length ? this._preMonthFiles : [...this.currentFiles];
+    this._monthFilter = monthKey || null;
+    // Close picker
+    const panel = document.getElementById('monthPickerPanel');
+    const btn = document.getElementById('monthPickerBtn');
+    if (panel) panel.classList.remove('open');
+    if (btn) { btn.classList.remove('active'); btn.classList.toggle('filtered', !!this._monthFilter); }
+
+    if (this._monthFilter) {
+      this._preMonthFiles = base;
+      this.originalFiles = base;
+      this.currentFiles = base.filter(f => {
+        if (!f.mtime) return false;
+        const d = new Date(f.mtime);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === this._monthFilter;
+      });
+    } else {
+      this.currentFiles = base;
+      this.originalFiles = base;
+      this._preMonthFiles = [];
+    }
+    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this.renderGallery();
+    this._updateMonthFilterChip();
+  },
+
+  _updateMonthFilterChip() {
+    const toolbar = document.getElementById('toolbar');
+    if (!toolbar) return;
+    let chip = document.getElementById('monthFilterChip');
+    if (this._monthFilter) {
+      const [y, m] = this._monthFilter.split('-');
+      const label = `${y}년 ${parseInt(m)}월`;
+      if (!chip) {
+        chip = document.createElement('div');
+        chip.id = 'monthFilterChip';
+        chip.className = 'month-filter-chip';
+        toolbar.insertBefore(chip, toolbar.firstChild);
+      }
+      chip.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${label}<span onclick="app.setMonthFilter(null)" style="cursor:pointer;opacity:0.65;font-size:15px;line-height:1;padding:0 2px;" title="필터 해제">✕</span>`;
+    } else {
+      if (chip) chip.remove();
+    }
+  },
+
   esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 };
 
@@ -2893,6 +3031,18 @@ document.getElementById('lightbox')?.addEventListener('mousemove', e => {
 });
 
 document.getElementById('passwordInput')?.addEventListener('keydown', e => { if(e.key==='Enter') app.login(); });
+
+// Close month picker when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.month-picker-wrap')) {
+    const panel = document.getElementById('monthPickerPanel');
+    const btn = document.getElementById('monthPickerBtn');
+    if (panel && panel.classList.contains('open')) {
+      panel.classList.remove('open');
+      if (btn) btn.classList.remove('active');
+    }
+  }
+});
 
 // Auto-login if password saved in session
 (function() {
