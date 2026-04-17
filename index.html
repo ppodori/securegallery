@@ -705,6 +705,10 @@ const app = {
     this._favMode = false;
     this._trashMode = false;
     this._currentSort = 'date_asc';
+    this._favFilter = 'all';
+    this._orientFilter = 'all';
+    this._favStatusFilter = 'all';
+    this._folderFilesCache = null;
     const filterDiv = document.getElementById('favFilterDiv');
     if (filterDiv) filterDiv.style.display = 'none';
     const sortAddedBtn = document.getElementById('sortAddedBtn');
@@ -868,9 +872,25 @@ const app = {
     }
 
     if (files.length > 0) {
-      document.getElementById('toolbar').style.display = 'flex';
+      const toolbar = document.getElementById('toolbar');
+      toolbar.style.display = 'flex';
       document.getElementById('fileCount').textContent = `${files.length.toLocaleString()}개 파일`;
       const ba = document.getElementById('batchActions'); if (ba) ba.classList.remove('show');
+      // Show filter div in subfolders (not root)
+      if (this.currentFolderId !== this.rootDriveId) {
+        this._folderFilesCache = [...files];
+        let filterDiv = document.getElementById('favFilterDiv');
+        if (!filterDiv) {
+          filterDiv = document.createElement('div');
+          filterDiv.id = 'favFilterDiv';
+          filterDiv.className = 'fav-filter';
+          filterDiv.innerHTML = this._getFilterHTML(true);
+          toolbar.insertBefore(filterDiv, toolbar.querySelector('.spacer'));
+        } else {
+          filterDiv.style.display = 'flex';
+          filterDiv.innerHTML = this._getFilterHTML(true);
+        }
+      }
       h += `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
     } else {
       document.getElementById('toolbar').style.display = subfolders.length > 0 ? 'none' : 'none';
@@ -1860,16 +1880,17 @@ const app = {
 
     // Add filter buttons
     this._orientFilter = 'all';
+    this._favStatusFilter = 'all';
     let filterDiv = document.getElementById('favFilterDiv');
     if (!filterDiv) {
       filterDiv = document.createElement('div');
       filterDiv.id = 'favFilterDiv';
       filterDiv.className = 'fav-filter';
-      filterDiv.innerHTML = this._getFilterHTML();
+      filterDiv.innerHTML = this._getFilterHTML(true);
       toolbar.insertBefore(filterDiv, toolbar.querySelector('.spacer'));
     } else {
       filterDiv.style.display = 'flex';
-      filterDiv.innerHTML = this._getFilterHTML();
+      filterDiv.innerHTML = this._getFilterHTML(true);
     }
 
     area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
@@ -2352,6 +2373,9 @@ const app = {
     if (this.originalFiles.length) {
       this.originalFiles = this.originalFiles.filter(f => !this.selectedSet.has(f.origDriveId));
     }
+    if (this._folderFilesCache) {
+      this._folderFilesCache = this._folderFilesCache.filter(f => !this.selectedSet.has(f.origDriveId));
+    }
     this.saveHidden();
     this.saveFavorites();
     document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
@@ -2366,6 +2390,8 @@ const app = {
     this._favMode = true;
     this._trashMode = false;
     this._favFilter = 'all';
+    this._favStatusFilter = 'all';
+    this._folderFilesCache = null;
     this.navStack = [{ id: '__favorites__', name: '❤ 즐겨찾기' }];
     this.currentFolderId = '__favorites__';
 
@@ -2396,18 +2422,18 @@ const app = {
     toolbar.style.display = 'flex';
     document.getElementById('fileCount').textContent = `${allFavFiles.length.toLocaleString()}개 파일`;
 
-    // Add filter buttons to toolbar (before spacer)
+    // Add filter buttons to toolbar (before spacer) — no fav status filter in favorites view
     this._orientFilter = 'all';
     let filterDiv = document.getElementById('favFilterDiv');
     if (!filterDiv) {
       filterDiv = document.createElement('div');
       filterDiv.id = 'favFilterDiv';
       filterDiv.className = 'fav-filter';
-      filterDiv.innerHTML = this._getFilterHTML();
+      filterDiv.innerHTML = this._getFilterHTML(false);
       toolbar.insertBefore(filterDiv, toolbar.querySelector('.spacer'));
     } else {
       filterDiv.style.display = 'flex';
-      filterDiv.innerHTML = this._getFilterHTML();
+      filterDiv.innerHTML = this._getFilterHTML(false);
     }
     // Add "추가순" sort button (favorites only) — after date button
     let addedBtn = document.getElementById('sortAddedBtn');
@@ -2430,8 +2456,12 @@ const app = {
     this.renderGallery();
   },
 
-  _getFilterHTML() {
-    return `<button class="active" data-filter="type" onclick="app.filterType('all')">전체</button><button data-filter="type" onclick="app.filterType('image')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> 사진</button><button data-filter="type" onclick="app.filterType('video')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> 영상</button><span style="margin:0 4px;color:var(--border)">│</span><button data-filter="orient" onclick="app.filterOrientation('portrait')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="6" y="3" width="12" height="18" rx="2"/></svg> 세로</button><button data-filter="orient" onclick="app.filterOrientation('landscape')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="3" y="6" width="18" height="12" rx="2"/></svg> 가로</button>`;
+  _getFilterHTML(showFavStatus) {
+    let html = `<button class="active" data-filter="type" onclick="app.filterType('all')">전체</button><button data-filter="type" onclick="app.filterType('image')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> 사진</button><button data-filter="type" onclick="app.filterType('video')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> 영상</button><span style="margin:0 4px;color:var(--border)">│</span><button data-filter="orient" onclick="app.filterOrientation('portrait')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="6" y="3" width="12" height="18" rx="2"/></svg> 세로</button><button data-filter="orient" onclick="app.filterOrientation('landscape')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><rect x="3" y="6" width="18" height="12" rx="2"/></svg> 가로</button>`;
+    if (showFavStatus) {
+      html += `<span style="margin:0 4px;color:var(--border)">│</span><button class="active" data-filter="favst" onclick="app.filterFavStatus('all')">모두</button><button data-filter="favst" onclick="app.filterFavStatus('fav')"><svg width="12" height="12" viewBox="0 0 24 24" fill="#ff3b5c" stroke="none" style="vertical-align:-1px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 즐겨찾기</button><button data-filter="favst" onclick="app.filterFavStatus('nonfav')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> 미등록</button>`;
+    }
+    return html;
   },
 
   _isPortrait(f) {
@@ -2455,6 +2485,11 @@ const app = {
     this._applyFilters();
   },
 
+  filterFavStatus(mode) {
+    this._favStatusFilter = this._favStatusFilter === mode && mode !== 'all' ? 'all' : mode;
+    this._applyFilters();
+  },
+
   // Legacy alias
   filterFavorites(mode) { this.filterType(mode); },
 
@@ -2465,7 +2500,7 @@ const app = {
     } else if (this.currentFolderId === '__random1000__') {
       source = [...this._r1000Cache];
     } else {
-      source = [...this.originalFiles];
+      source = [...(this._folderFilesCache || this.originalFiles)];
     }
 
     // Type filter
@@ -2480,6 +2515,13 @@ const app = {
       source = source.filter(f => this._isPortrait(f));
     } else if (this._orientFilter === 'landscape') {
       source = source.filter(f => this._isLandscape(f));
+    }
+
+    // Favorites status filter
+    if (this._favStatusFilter === 'fav') {
+      source = source.filter(f => this.favSet.has(f.origDriveId));
+    } else if (this._favStatusFilter === 'nonfav') {
+      source = source.filter(f => !this.favSet.has(f.origDriveId));
     }
 
     this.currentFiles = source;
@@ -2499,6 +2541,12 @@ const app = {
       if (this._orientFilter === 'portrait' && orientBtns[0]) orientBtns[0].classList.add('active');
       if (this._orientFilter === 'landscape' && orientBtns[1]) orientBtns[1].classList.add('active');
     }
+
+    // Update favorites status button states
+    document.querySelectorAll('#favFilterDiv [data-filter="favst"]').forEach(b => b.classList.remove('active'));
+    const favStIdx = { all: 0, fav: 1, nonfav: 2 };
+    const favStBtns = document.querySelectorAll('#favFilterDiv [data-filter="favst"]');
+    if (favStBtns[favStIdx[this._favStatusFilter]]) favStBtns[favStIdx[this._favStatusFilter]].classList.add('active');
 
     if (this._currentSort !== 'date_asc') this.sortFiles(this._currentSort);
     else this.renderGallery();
@@ -2564,6 +2612,9 @@ const app = {
     if (this.originalFiles.length) {
       this.originalFiles = this.originalFiles.filter(of => of.origDriveId !== f.origDriveId);
     }
+    if (this._folderFilesCache) {
+      this._folderFilesCache = this._folderFilesCache.filter(of => of.origDriveId !== f.origDriveId);
+    }
 
     this.saveHidden();
     document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
@@ -2583,6 +2634,8 @@ const app = {
   openTrash() {
     this._favMode = false;
     this._trashMode = true;
+    this._favStatusFilter = 'all';
+    this._folderFilesCache = null;
     this.navStack = [{ id: '__trash__', name: '휴지통' }];
     this.currentFolderId = '__trash__';
 
