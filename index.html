@@ -66,6 +66,9 @@ input { font-family: var(--font); outline: none; }
 .filter-indicator.show { display: inline-flex; }
 .filter-indicator:hover { background: rgba(34, 211, 238, 0.25); transform: translateY(-1px); }
 .toolbar { padding: 12px 20px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); flex-shrink: 0; flex-wrap: wrap; background: var(--surface); margin-bottom: 16px; }
+.toolbar-floating { position: fixed; top: calc(var(--header-h) + 12px); left: 24px; right: 24px; z-index: 50; transform: translateY(-140%); opacity: 0; pointer-events: none; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease; }
+.toolbar-floating.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+.toolbar-floating .toolbar { margin: 0; box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6); background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .toolbar .file-count { font-size: 13px; color: var(--text2); font-weight: 500; }
 .toolbar .spacer { flex: 1; }
 .grid-slider { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); }
@@ -237,6 +240,7 @@ input { font-family: var(--font); outline: none; }
   :root { --header-h: 52px; }
   .content-header { padding: 0 16px; }
   .toolbar { padding: 12px 16px; gap: 8px; }
+  .toolbar-floating { left: 12px; right: 12px; top: calc(var(--header-h) + 8px); }
   .content-scroll { padding: 16px; }
   .lb-nav { width: 40px; height: 40px; font-size: 30px; }
   .lb-nav.prev { left: 12px; }
@@ -323,6 +327,7 @@ input { font-family: var(--font); outline: none; }
       </div>
       <div id="contentArea"></div>
     </div>
+    <div class="toolbar-floating" id="toolbarFloating"></div>
     <div class="batch-actions" id="batchActions">
       <span class="batch-count" id="batchCount"></span>
       <span class="batch-divider"></span>
@@ -3120,10 +3125,21 @@ document.addEventListener('keydown', e => {
       if (document.fullscreenElement) { document.exitFullscreen(); }
       else { history.back(); }
     }
-    if(e.key==='ArrowLeft'||e.key==='PageUp') { app.lbNav(-1); }
-    if(e.key==='ArrowRight'||e.key==='PageDown') { app.lbNav(1); }
-    if(e.key==='ArrowUp') { e.preventDefault(); app.lbRandom(); }
-    if(e.key==='ArrowDown') { e.preventDefault(); app.lbRandom(); }
+    if(e.key==='PageUp') { app.lbNav(-1); }
+    if(e.key==='PageDown') { app.lbNav(1); }
+    if(e.key==='ArrowUp') { e.preventDefault(); app.lbNav(-1); }
+    if(e.key==='ArrowDown') { e.preventDefault(); app.lbNav(1); }
+    if(e.key==='ArrowLeft' || e.key==='ArrowRight') {
+      const videos = document.querySelectorAll('#lbContent video');
+      if (videos.length > 0) {
+        e.preventDefault();
+        const delta = e.key==='ArrowRight' ? 1 : -1;
+        videos.forEach(v => {
+          const dur = v.duration || 0;
+          v.currentTime = Math.max(0, Math.min(dur, v.currentTime + delta));
+        });
+      }
+    }
     if(e.key===' ') { e.preventDefault(); document.querySelectorAll('#lbContent video').forEach(v=>{v.paused?v.play():v.pause();}); }
     if(e.key==='s'||e.key==='S') { app.toggleSlideshow(); }
     if(e.key==='f'||e.key==='F'||e.key==='Enter') { e.preventDefault(); app.toggleFullscreen(); }
@@ -3136,9 +3152,10 @@ document.addEventListener('keydown', e => {
     if(e.key==='Delete') { app.hideCurrentFile(); }
   } else if (e.key === 'Escape') {
     // Close open popovers first, then clear selection
-    const monthPanel = document.getElementById('monthPickerPanel');
-    if (monthPanel && monthPanel.classList.contains('open')) {
-      app.toggleMonthPicker();
+    const anyMonthPanel = document.querySelector('.month-picker-panel.open');
+    if (anyMonthPanel) {
+      document.querySelectorAll('.month-picker-panel.open').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.month-picker-btn.active').forEach(b => b.classList.remove('active'));
       return;
     }
     const gridPanel = document.getElementById('gridSliderPanel');
@@ -3197,12 +3214,9 @@ document.getElementById('passwordInput')?.addEventListener('keydown', e => { if(
 // Close month picker when clicking outside
 document.addEventListener('click', e => {
   if (!e.target.closest('.month-picker-wrap')) {
-    const panel = document.getElementById('monthPickerPanel');
-    const btn = document.getElementById('monthPickerBtn');
-    if (panel && panel.classList.contains('open')) {
-      panel.classList.remove('open');
-      if (btn) btn.classList.remove('active');
-    }
+    // Close ALL month picker panels (original + floating clone)
+    document.querySelectorAll('.month-picker-panel.open').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.month-picker-btn.active').forEach(b => b.classList.remove('active'));
   }
   if (!e.target.closest('.grid-slider-wrap')) {
     const panel = document.getElementById('gridSliderPanel');
@@ -3237,6 +3251,103 @@ if (!document.documentElement.requestFullscreen && !document.documentElement.web
   scroll.addEventListener('scroll', () => {
     btn.classList.toggle('show', scroll.scrollTop > 200);
   });
+})();
+
+// ===== FLOATING TOOLBAR ON SCROLL UP =====
+(function() {
+  const scroll = document.getElementById('contentScroll');
+  const floating = document.getElementById('toolbarFloating');
+  if (!scroll || !floating) return;
+  let lastScrollTop = 0;
+  let rafPending = false;
+
+  function syncFloating() {
+    const original = document.getElementById('toolbar');
+    if (!original) return;
+    const clone = original.cloneNode(true);
+    clone.style.display = 'flex';
+    // Strip duplicate IDs (original stays canonical)
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+
+    // Rewire month picker in clone to use its own panel
+    const cloneMonthBtn = clone.querySelector('.month-picker-btn');
+    const cloneMonthPanel = clone.querySelector('.month-picker-panel');
+    if (cloneMonthBtn && cloneMonthPanel) {
+      cloneMonthBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isOpen = cloneMonthPanel.classList.contains('open');
+        // Close all other month panels first
+        document.querySelectorAll('.month-picker-panel.open').forEach(p => p.classList.remove('open'));
+        document.querySelectorAll('.month-picker-btn.active').forEach(b => b.classList.remove('active'));
+        if (!isOpen) {
+          app._buildMonthPicker(cloneMonthPanel);
+          cloneMonthPanel.classList.add('open');
+          cloneMonthBtn.classList.add('active');
+        }
+      };
+      // Close clone's panel after item click (setMonthFilter renders gallery)
+      cloneMonthPanel.addEventListener('click', (e) => {
+        if (e.target.closest('.month-picker-item')) {
+          setTimeout(() => {
+            cloneMonthPanel.classList.remove('open');
+            cloneMonthBtn.classList.remove('active');
+            // Re-sync to reflect updated filter state (chip, button active, etc.)
+            if (floating.classList.contains('show')) syncFloating();
+          }, 120);
+        }
+      });
+    }
+
+    floating.innerHTML = '';
+    floating.appendChild(clone);
+  }
+
+  // Re-sync when user interacts with floating (to reflect updated state)
+  floating.addEventListener('click', (e) => {
+    // Skip re-sync if opening month picker (would close it)
+    if (e.target.closest('.month-picker-wrap')) return;
+    setTimeout(() => {
+      if (floating.classList.contains('show')) syncFloating();
+    }, 120);
+  });
+
+  function update() {
+    rafPending = false;
+    const original = document.getElementById('toolbar');
+    if (!original || original.style.display === 'none') {
+      floating.classList.remove('show');
+      return;
+    }
+
+    const st = scroll.scrollTop;
+    const rect = original.getBoundingClientRect();
+    const scrollRect = scroll.getBoundingClientRect();
+    const toolbarOutOfView = rect.bottom < scrollRect.top;
+    const scrollingUp = st < lastScrollTop - 3;
+    const scrollingDown = st > lastScrollTop + 3;
+
+    if (scrollingUp && toolbarOutOfView) {
+      if (!floating.classList.contains('show')) syncFloating();
+      floating.classList.add('show');
+    } else if (scrollingDown || !toolbarOutOfView) {
+      floating.classList.remove('show');
+      // Also close any open month panel in clone
+      const clonePanel = floating.querySelector('.month-picker-panel.open');
+      const cloneBtn = floating.querySelector('.month-picker-btn.active');
+      if (clonePanel) clonePanel.classList.remove('open');
+      if (cloneBtn) cloneBtn.classList.remove('active');
+    }
+
+    lastScrollTop = st;
+  }
+
+  scroll.addEventListener('scroll', () => {
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(update);
+    }
+  }, { passive: true });
 })();
 
 // ===== BROWSER HISTORY =====
