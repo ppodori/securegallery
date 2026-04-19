@@ -61,6 +61,7 @@ input { font-family: var(--font); outline: none; }
 .breadcrumb a:hover { color: var(--text); }
 .breadcrumb .sep { color: var(--border); }
 .breadcrumb .current { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-ellipsis { display: none; color: var(--text2); }
 .content-header .spacer { flex: 1; }
 .filter-indicator { display: none; align-items: center; gap: 4px; padding: 5px 10px; font-size: 11px; font-weight: 700; background: rgba(34, 211, 238, 0.15); color: #22d3ee; border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 99px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
 .filter-indicator.show { display: inline-flex; }
@@ -86,13 +87,17 @@ input { font-family: var(--font); outline: none; }
 .toolbar-btn:hover, .sort-btn:hover { transform: translateY(-1px); }
 .sort-btn .sort-icon { font-weight: 700; font-size: 13px; }
 .sort-btn .sort-arrow { font-size: 11px; opacity: 0.7; }
-.sort-btn.active { box-shadow: 0 0 0 1px currentColor; }
-.shuffle-btn.active { box-shadow: 0 0 0 1px currentColor; }
 .shuffle-btn { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
 .shuffle-btn:hover { background: rgba(239, 68, 68, 0.25); }
+.shuffle-btn.active { background: rgba(239, 68, 68, 0.35); border-color: rgba(239, 68, 68, 0.6); color: #fecaca; box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.5), 0 0 12px rgba(239, 68, 68, 0.25); font-weight: 700; }
 .sort-name { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+.sort-name.active { background: rgba(34, 197, 94, 0.35); border-color: rgba(34, 197, 94, 0.6); color: #bbf7d0; box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.5), 0 0 12px rgba(34, 197, 94, 0.25); font-weight: 700; }
 .sort-size { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+.sort-size.active { background: rgba(59, 130, 246, 0.35); border-color: rgba(59, 130, 246, 0.6); color: #bfdbfe; box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.25); font-weight: 700; }
 .sort-date { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.2); }
+.sort-date.active { background: rgba(249, 115, 22, 0.35); border-color: rgba(249, 115, 22, 0.6); color: #fed7aa; box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.5), 0 0 12px rgba(249, 115, 22, 0.25); font-weight: 700; }
+.sort-added { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.2); }
+.sort-added.active { background: rgba(168, 85, 247, 0.35); border-color: rgba(168, 85, 247, 0.6); color: #e9d5ff; box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.5), 0 0 12px rgba(168, 85, 247, 0.25); font-weight: 700; }
 .fav-filter { display: flex; flex-wrap: wrap; gap: 6px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 10px; border: 1px solid var(--border); }
 .fav-filter button { padding: 6px 12px; border-radius: 6px; color: var(--text2); background: transparent; border: none; font-weight: 500; white-space: nowrap; }
 .fav-filter button:hover { color: var(--text); }
@@ -106,8 +111,7 @@ input { font-family: var(--font); outline: none; }
 .gallery-item .vid-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); color: #fff; font-size: 10px; padding: 4px 6px; border-radius: 6px; z-index: 2; font-weight: 700; }
 .gallery-item .hover-info { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.9)); padding: 30px 12px 10px; opacity: 0; transition: opacity 0.2s ease; z-index: 1; pointer-events: none; }
 .gallery-item:hover .hover-info { opacity: 1; }
-.gallery-item .hover-info .hi-name { font-size: 12px; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-.gallery-item .hover-info .hi-size { font-size: 11px; color: rgba(255,255,255,0.7); }
+.gallery-item .hover-info .hi-date { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; }
 .gallery-item .loading-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text2); }
 .gallery-item .fav-badge { position: absolute; top: 8px; right: 8px; color: #ff3b5c; font-size: 20px; z-index: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
 .gallery-item .li-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); color: #fff; font-size: 10px; padding: 4px 8px; border-radius: 6px; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; z-index: 2; border: 1px solid rgba(255,255,255,0.1); }
@@ -204,13 +208,24 @@ input { font-family: var(--font); outline: none; }
 .lb-view-btn { padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center; opacity: 0.5; background: transparent; }
 .lb-view-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
 .lb-view-btn.active { opacity: 1; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 1px 1px rgba(0,0,0,0.2); }
-.ss-panel { display: none; position: absolute; bottom: calc(var(--header-h) + 12px); left: 50%; transform: translateX(-50%) translateY(10px); background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; z-index: 30; min-width: 240px; box-shadow: var(--shadow-lg); opacity: 0; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.ss-panel { display: none; position: absolute; bottom: calc(var(--header-h) + 8px); left: 50%; transform: translateX(-50%) translateY(10px); background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 14px; z-index: 30; min-width: 210px; box-shadow: var(--shadow-lg); opacity: 0; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .ss-panel.open { display: block; opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-.ss-panel h4 { font-size: 15px; color: #fff; margin-bottom: 16px; font-weight: 700; }
-.ss-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.ss-row label { font-size: 14px; color: rgba(255,255,255,0.7); width: 44px; flex-shrink: 0; }
-.ss-row select { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; padding: 8px 12px; font-size: 14px; outline: none; cursor: pointer; }
+.ss-panel h4 { font-size: 11px; color: var(--text2); margin-bottom: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+.ss-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ss-row label { font-size: 12px; color: rgba(255,255,255,0.7); width: 32px; flex-shrink: 0; }
+.ss-row select { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 5px 8px; font-size: 12px; outline: none; cursor: pointer; }
 .ss-row select:focus { border-color: var(--accent); }
+.ss-dd { position: relative; flex: 1; }
+.ss-dd-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 5px 10px; font-size: 12px; font-family: var(--font); cursor: pointer; transition: border-color 0.15s; }
+.ss-dd-btn:hover { border-color: rgba(255,255,255,0.25); }
+.ss-dd-btn svg { opacity: 0.5; transition: transform 0.2s; flex-shrink: 0; margin-left: 6px; }
+.ss-dd.open .ss-dd-btn { border-color: var(--accent); }
+.ss-dd.open .ss-dd-btn svg { transform: rotate(180deg); opacity: 0.9; }
+.ss-dd-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: rgba(15,15,18,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.55); }
+.ss-dd.open .ss-dd-menu { display: block; animation: fadeIn 0.12s ease; }
+.ss-dd-item { padding: 6px 10px; font-size: 12px; color: rgba(255,255,255,0.75); cursor: pointer; border-radius: 4px; transition: background 0.1s, color 0.1s; }
+.ss-dd-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.ss-dd-item.selected { background: rgba(59,130,246,0.18); color: var(--accent); font-weight: 600; }
 .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 24px; border-radius: 99px; font-size: 14px; font-weight: 600; z-index: 2000; opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; box-shadow: var(--shadow-md); }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; margin: auto; }
@@ -239,6 +254,8 @@ input { font-family: var(--font); outline: none; }
 @media(max-width: 768px) {
   :root { --header-h: 52px; }
   .content-header { padding: 0 16px; }
+  .breadcrumb .bc-middle { display: none; }
+  .breadcrumb .bc-ellipsis { display: inline-flex; align-items: center; gap: 8px; }
   .toolbar { padding: 12px 16px; gap: 8px; }
   .toolbar-floating { left: 12px; right: 12px; top: calc(var(--header-h) + 8px); }
   .content-scroll { padding: 16px; }
@@ -356,7 +373,7 @@ input { font-family: var(--font); outline: none; }
     <div class="lb-hud" id="lbHud"></div>
   </div>
   <div class="lb-bottom">
-    <button id="lbSSBtn" onclick="app.lbSSToggle()">▶ 슬라이드쇼</button>
+    <button id="lbSSBtn" onclick="app.lbSSToggle()" title="슬라이드쇼" style="padding:8px 10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg></button>
     <button class="lb-view-btn active" id="lbView1" onclick="app.setViewCount(1)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/></svg></button>
     <button class="lb-view-btn" id="lbView2" onclick="app.setViewCount(2)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="8" y1="2" x2="8" y2="14"/></svg></button>
     <button class="lb-view-btn" id="lbView3" onclick="app.setViewCount(3)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="6" y1="2" x2="6" y2="14"/><line x1="10.5" y1="2" x2="10.5" y2="14"/></svg></button>
@@ -364,10 +381,27 @@ input { font-family: var(--font); outline: none; }
     <!-- Slideshow settings panel -->
     <div class="ss-panel" id="ssPanel">
       <h4>슬라이드쇼 설정</h4>
-      <div class="ss-row"><label>간격</label><select id="ssInterval"><option value="4" selected>4초</option><option value="6">6초</option><option value="8">8초</option><option value="10">10초</option></select></div>
-      <div class="ss-row"><label>순서</label><select id="ssOrder"><option value="seq">순차</option><option value="random">랜덤</option></select></div>
-      <div class="ss-row"><label>확대</label><input type="checkbox" id="ssKenBurns" style="width:16px;height:16px;accent-color:var(--accent)"></div>
-      <div class="ss-row" style="margin-top:12px;margin-bottom:0;justify-content:flex-end"><button style="background:var(--accent);color:#fff;padding:6px 16px;border-radius:6px;font-size:13px;font-weight:600;font-family:var(--font)" onclick="app.startSlideshow()">시작</button></div>
+      <div class="ss-row"><label>간격</label>
+        <div class="ss-dd" id="ssIntervalDD" data-value="4">
+          <button type="button" class="ss-dd-btn" onclick="app._toggleSSDD('ssIntervalDD', event)"><span class="ss-dd-label">4초</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div class="ss-dd-menu">
+            <div class="ss-dd-item" data-value="4" onclick="app._selectSSDD('ssIntervalDD','4','4초')">4초</div>
+            <div class="ss-dd-item" data-value="6" onclick="app._selectSSDD('ssIntervalDD','6','6초')">6초</div>
+            <div class="ss-dd-item" data-value="8" onclick="app._selectSSDD('ssIntervalDD','8','8초')">8초</div>
+            <div class="ss-dd-item" data-value="10" onclick="app._selectSSDD('ssIntervalDD','10','10초')">10초</div>
+          </div>
+        </div>
+      </div>
+      <div class="ss-row"><label>순서</label>
+        <div class="ss-dd" id="ssOrderDD" data-value="seq">
+          <button type="button" class="ss-dd-btn" onclick="app._toggleSSDD('ssOrderDD', event)"><span class="ss-dd-label">순차</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div class="ss-dd-menu">
+            <div class="ss-dd-item" data-value="seq" onclick="app._selectSSDD('ssOrderDD','seq','순차')">순차</div>
+            <div class="ss-dd-item" data-value="random" onclick="app._selectSSDD('ssOrderDD','random','랜덤')">랜덤</div>
+          </div>
+        </div>
+      </div>
+      <div class="ss-row" style="margin-top:8px;margin-bottom:0;"><label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;width:auto;"><input type="checkbox" id="ssKenBurns" style="width:14px;height:14px;accent-color:var(--accent);margin:0;"> 확대</label><div style="flex:1"></div><button style="background:var(--accent);color:#fff;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--font)" onclick="app.startSlideshow()">시작</button></div>
     </div>
   </div>
   <div id="lbToast" style="position:absolute;top:60%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-family:var(--font);z-index:50;opacity:0;transition:opacity 0.3s;pointer-events:none"></div>
@@ -815,13 +849,29 @@ const app = {
   renderBreadcrumb() {
     const bc = document.getElementById('breadcrumb');
     if (!this.navStack.length) { bc.innerHTML = ''; return; }
+    const total = this.navStack.length;
     let h = '';
-    for (let i = 0; i < this.navStack.length; i++) {
+    for (let i = 0; i < total; i++) {
       const item = this.navStack[i];
-      if (i > 0) h += `<span class="sep">›</span>`;
-      h += i === this.navStack.length - 1
-        ? `<span class="current">${this.esc(item.name)}</span>`
-        : `<a href="#" onclick="app.goTo(${i});return false;">${this.esc(item.name)}</a>`;
+      const isFirst = i === 0;
+      const isLast = i === total - 1;
+      const isMiddle = !isFirst && !isLast;
+
+      // Separator before this item (hidden on mobile if middle)
+      if (i > 0) h += `<span class="sep${isMiddle ? ' bc-middle' : ''}">›</span>`;
+
+      if (isLast) {
+        h += `<span class="current">${this.esc(item.name)}</span>`;
+      } else if (isMiddle) {
+        h += `<a href="#" class="bc-middle" onclick="app.goTo(${i});return false;">${this.esc(item.name)}</a>`;
+      } else {
+        // First item
+        h += `<a href="#" onclick="app.goTo(${i});return false;">${this.esc(item.name)}</a>`;
+        // Ellipsis after first (shown on mobile when total > 2)
+        if (total > 2) {
+          h += `<span class="bc-ellipsis"><span class="sep">›</span><span>...</span></span>`;
+        }
+      }
     }
     bc.innerHTML = h;
   },
@@ -911,7 +961,7 @@ const app = {
     if (files.length > 0) {
       const toolbar = document.getElementById('toolbar');
       toolbar.style.display = 'flex';
-      document.getElementById('fileCount').textContent = `${files.length.toLocaleString()}개 파일`;
+      this._updateFileCount(files);
       const ba = document.getElementById('batchActions'); if (ba) ba.classList.remove('show');
       // Show filter div in subfolders (not root)
       if (this.currentFolderId !== this.rootDriveId) {
@@ -1042,9 +1092,8 @@ const app = {
           const dateTag = file.mtime ? `<span style="opacity:0.6;margin-left:4px">${new Date(file.mtime).toISOString().slice(0,10)}</span>` : '';
           ih += `<div class="li-badge">${this.esc(file._folderName)}${dateTag}</div>`;
         }
-        const sizeStr = file.size ? (file.size < 1048576 ? (file.size/1024).toFixed(0)+'KB' : (file.size/1048576).toFixed(1)+'MB') : '';
         const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
-        ih += `<div class="hover-info"><div class="hi-name">${this.esc(file.name)}</div><div class="hi-size">${sizeStr}${dateStr ? '  ·  ' + dateStr : ''}</div></div>`;
+        if (dateStr) ih += `<div class="hover-info"><div class="hi-date">${dateStr}</div></div>`;
         ih += `<div class="sel-check" onclick="event.stopPropagation();app.toggleSelect(${i},event.shiftKey)"></div>`;
         el.innerHTML = ih;
         if (!cached) { el.dataset.thumbId = file.thumbDriveId; toObserve.push(el); }
@@ -1464,18 +1513,45 @@ const app = {
     }
   },
 
+  _toggleSSDD(id, e) {
+    if (e) e.stopPropagation();
+    const dd = document.getElementById(id);
+    if (!dd) return;
+    const wasOpen = dd.classList.contains('open');
+    // Close all other dropdowns
+    document.querySelectorAll('.ss-dd.open').forEach(x => x.classList.remove('open'));
+    if (!wasOpen) {
+      // Mark currently selected item
+      const current = dd.dataset.value;
+      dd.querySelectorAll('.ss-dd-item').forEach(it => {
+        it.classList.toggle('selected', it.dataset.value === current);
+      });
+      dd.classList.add('open');
+    }
+  },
+
+  _selectSSDD(id, value, label) {
+    const dd = document.getElementById(id);
+    if (!dd) return;
+    dd.dataset.value = value;
+    const lblEl = dd.querySelector('.ss-dd-label');
+    if (lblEl) lblEl.textContent = label;
+    dd.classList.remove('open');
+  },
+
   startSlideshow() {
-    const intervalEl = document.getElementById('ssInterval');
-    const orderEl = document.getElementById('ssOrder');
+    const intervalDD = document.getElementById('ssIntervalDD');
+    const orderDD = document.getElementById('ssOrderDD');
     const kbEl = document.getElementById('ssKenBurns');
-    this.ssInterval = parseInt(intervalEl.value) || 4;
-    this.ssOrder = orderEl.value;
+    this.ssInterval = parseInt(intervalDD?.dataset.value) || 4;
+    this.ssOrder = orderDD?.dataset.value || 'seq';
     this.ssKenBurns = kbEl?.checked || false;
     if (kbEl) localStorage.setItem('sg_kenBurns', this.ssKenBurns ? '1' : '0');
     this.ssRunning = true;
     this.closeSSPanel();
     document.getElementById('lbSSBtn').classList.add('active');
-    document.getElementById('lbSSBtn').textContent = '⏸ 정지';
+    document.getElementById('lbSSBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+    document.getElementById('lbSSBtn').title = '정지';
     const orderLabel = this.ssOrder === 'random' ? '랜덤' : '순차';
     const kbLabel = this.ssKenBurns ? ' · 확대' : '';
     this.showHud('▶', '슬라이드쇼', `${orderLabel} · ${this.ssInterval}초${kbLabel}`);
@@ -1500,7 +1576,7 @@ const app = {
     clearTimeout(this.ssTimer);
     this.ssTimer = null;
     const btn = document.getElementById('lbSSBtn');
-    if (btn) { btn.classList.remove('active'); btn.textContent = '▶ 슬라이드쇼'; }
+    if (btn) { btn.classList.remove('active'); btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>'; btn.title = '슬라이드쇼'; }
     const video = document.querySelector('#lbContent video');
     if (video) video.loop = true;
     this._applyKenBurns();
@@ -1922,7 +1998,7 @@ const app = {
     const area = document.getElementById('contentArea');
     const toolbar = document.getElementById('toolbar');
     toolbar.style.display = 'flex';
-    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount();
     const nameArrow = document.getElementById('sortNameArrow');
     const dateArrow = document.getElementById('sortDateArrow');
     if (nameArrow) nameArrow.textContent = '↑';
@@ -2147,9 +2223,8 @@ const app = {
       let ih = cached ? `<img src="${cached}">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
       if (file.type?.startsWith('video/')) ih += `<div class="vid-badge">▶</div>`;
       if (this.favSet.has(file.origDriveId)) ih += `<div class="fav-badge">❤</div>`;
-      const sizeStr = file.size ? (file.size < 1048576 ? (file.size/1024).toFixed(0)+'KB' : (file.size/1048576).toFixed(1)+'MB') : '';
       const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
-      ih += `<div class="hover-info"><div class="hi-name">${this.esc(file.name)}</div><div class="hi-size">${sizeStr}${dateStr ? '  ·  ' + dateStr : ''}</div></div>`;
+      if (dateStr) ih += `<div class="hover-info"><div class="hi-date">${dateStr}</div></div>`;
       ih += `<div class="sel-check" onclick="event.stopPropagation();app.toggleSelect(${i},event.shiftKey)"></div>`;
       el.innerHTML = ih;
       if (!cached) { el.dataset.thumbId = file.thumbDriveId; toObserve.push(el); }
@@ -2298,7 +2373,7 @@ const app = {
         const d = new Date(f.mtime);
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === this._monthFilter;
       });
-      document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+      this._updateFileCount();
     }
     this.renderGallery();
 
@@ -2432,7 +2507,7 @@ const app = {
     }
     this.saveHidden();
     this.saveFavorites();
-    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount();
     const count = ids.length;
     this.clearSelection();
     this.renderGallery();
@@ -2474,7 +2549,7 @@ const app = {
     const area = document.getElementById('contentArea');
     const toolbar = document.getElementById('toolbar');
     toolbar.style.display = 'flex';
-    document.getElementById('fileCount').textContent = `${allFavFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount(allFavFiles);
 
     // Add filter buttons to toolbar (before spacer) — no fav status filter in favorites view
     this._orientFilter = 'all';
@@ -2494,8 +2569,7 @@ const app = {
     if (!addedBtn) {
       addedBtn = document.createElement('button');
       addedBtn.id = 'sortAddedBtn';
-      addedBtn.className = 'sort-btn active';
-      addedBtn.style.cssText = 'background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.2);';
+      addedBtn.className = 'sort-btn sort-added active';
       addedBtn.innerHTML = '<svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg> 추가순 <span class="sort-arrow" id="sortAddedArrow">↓</span>';
       addedBtn.onclick = () => this.sortFiles(this._currentSort === 'added_desc' ? 'added_asc' : 'added_desc');
       const dateBtn = document.getElementById('sortDateBtn');
@@ -2551,6 +2625,20 @@ const app = {
     this._favStatusFilter = 'all';
     if (this._monthFilter) this.setMonthFilter(null);
     this._applyFilters();
+  },
+
+  _updateFileCount(list) {
+    list = list || this.currentFiles;
+    const el = document.getElementById('fileCount');
+    if (!el) return;
+    const n = list.length;
+    const imgs = list.filter(f => !f.type?.startsWith('video/')).length;
+    const vids = n - imgs;
+    let html = `${n.toLocaleString()}개 파일`;
+    if (imgs > 0 && vids > 0) {
+      html += ` <span style="opacity:0.55;font-size:11px;margin-left:6px;">사진 ${imgs.toLocaleString()} · 영상 ${vids.toLocaleString()}</span>`;
+    }
+    el.innerHTML = html;
   },
 
   _updateFilterIndicator() {
@@ -2622,7 +2710,7 @@ const app = {
 
     this.currentFiles = source;
     this.originalFiles = [...source];
-    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount();
 
     // Update type button states
     document.querySelectorAll('#favFilterDiv [data-filter="type"]').forEach(b => b.classList.remove('active'));
@@ -2714,7 +2802,7 @@ const app = {
     }
 
     this.saveHidden();
-    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount();
 
     if (this.currentFiles.length === 0) {
       this.closeLightbox();
@@ -2760,7 +2848,7 @@ const app = {
     const area = document.getElementById('contentArea');
     const toolbar = document.getElementById('toolbar');
     toolbar.style.display = 'flex';
-    document.getElementById('fileCount').textContent = `${trashFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount(trashFiles);
 
     // Hide fav filter if visible
     const filterDiv = document.getElementById('favFilterDiv');
@@ -2804,9 +2892,8 @@ const app = {
 
       if (file.type?.startsWith('video/')) el.innerHTML += `<div class="vid-badge">▶</div>`;
 
-      const sizeStr = file.size ? (file.size < 1048576 ? (file.size/1024).toFixed(0)+'KB' : (file.size/1048576).toFixed(1)+'MB') : '';
       const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
-      el.innerHTML += `<div class="hover-info"><div class="hi-name">${this.esc(file.name)}</div><div class="hi-size">${sizeStr}${dateStr ? '  ·  ' + dateStr : ''}</div></div>`;
+      if (dateStr) el.innerHTML += `<div class="hover-info"><div class="hi-date">${dateStr}</div></div>`;
 
       // Restore button overlay
       el.innerHTML += `<div class="trash-restore" data-idx="${i}">↩ 복원</div>`;
@@ -2827,7 +2914,7 @@ const app = {
     this.hiddenData = this.hiddenData.filter(d => d.origDriveId !== f.origDriveId);
     this.currentFiles = this.currentFiles.filter(d => d.origDriveId !== f.origDriveId);
     this.originalFiles = this.originalFiles.filter(d => d.origDriveId !== f.origDriveId);
-    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount();
     this.saveHidden();
     this.toast('↩ 복원됨');
   },
@@ -3078,7 +3165,7 @@ const app = {
       this.originalFiles = base;
       this._preMonthFiles = [];
     }
-    document.getElementById('fileCount').textContent = `${this.currentFiles.length.toLocaleString()}개 파일`;
+    this._updateFileCount();
     this.renderGallery();
     this._updateMonthFilterChip();
     this._updateFilterIndicator();
@@ -3225,6 +3312,9 @@ document.addEventListener('click', e => {
       panel.classList.remove('open');
       if (btn) btn.classList.remove('active');
     }
+  }
+  if (!e.target.closest('.ss-dd')) {
+    document.querySelectorAll('.ss-dd.open').forEach(x => x.classList.remove('open'));
   }
 });
 
