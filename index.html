@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Secure Gallery</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Noto+Serif+KR:wght@300;500;600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3C/defs%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23FF3B30' opacity='0.85' transform='rotate(0 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23FF9500' opacity='0.85' transform='rotate(45 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23FFCC02' opacity='0.85' transform='rotate(90 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%2334C759' opacity='0.85' transform='rotate(135 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%2330B0C7' opacity='0.85' transform='rotate(180 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23007AFF' opacity='0.85' transform='rotate(225 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%235856D6' opacity='0.85' transform='rotate(270 32 32)'/%3E%3Cellipse cx='32' cy='18' rx='8' ry='14' fill='%23AF52DE' opacity='0.85' transform='rotate(315 32 32)'/%3E%3C/svg%3E">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -23,7 +20,7 @@
   --success: #22c55e;
   --header-h: 56px;
   --radius: 12px;
-  --serif: 'Fraunces', 'Noto Serif KR', Georgia, serif;
+  --serif: Georgia, 'Times New Roman', serif;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', Roboto, sans-serif;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 6px 16px -2px rgba(0, 0, 0, 0.6);
@@ -98,7 +95,7 @@ input { font-family: var(--font); outline: none; }
 .fav-filter button.active { background: rgba(255,255,255,0.08); color: var(--text); }
 .content-scroll { flex: 1; overflow-y: auto; padding: 18px 12px; }
 .gallery-grid { display: grid; gap: 1px; }
-.gallery-item { aspect-ratio: 1; background: var(--surface2); cursor: pointer; overflow: hidden; position: relative; border-radius: 0; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.gallery-item { aspect-ratio: 1; background: var(--surface2); cursor: pointer; overflow: hidden; position: relative; border-radius: 0; transition: transform 0.2s ease, box-shadow 0.2s ease; content-visibility: auto; contain-intrinsic-size: auto 160px; }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s ease; }
 .gallery-item:hover { z-index: 2; }
 .gallery-item:hover img { transform: scale(1.05); filter: brightness(1.08); }
@@ -129,8 +126,14 @@ input { font-family: var(--font); outline: none; }
 .batch-btn.clear { background: transparent; color: var(--text2); }
 .batch-btn.clear:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 .batch-count { font-size: 13px; color: white; font-weight: 700; padding: 8px 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 10px; min-height: 40px; display: inline-flex; align-items: center; white-space: nowrap; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35); }
-.date-sep { grid-column: 1/-1; font-family: var(--serif); font-size: clamp(26px, 5vw, 40px); font-weight: 300; color: var(--text); padding: 38px 2px 14px; margin-bottom: 2px; display: flex; align-items: baseline; gap: 14px; letter-spacing: -0.01em; }
-.date-sep svg { display: none; }
+.date-sep { grid-column: 1/-1; font-family: var(--serif); font-size: clamp(26px, 5vw, 40px); font-weight: 300; color: var(--text); padding: 38px 2px 14px; margin-bottom: 2px; display: flex; align-items: baseline; gap: 14px; letter-spacing: -0.01em; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.sep-chev { font-size: 0.62em; color: var(--accent); opacity: 0.9; display: inline-block; width: 1.15em; text-align: center; flex-shrink: 0; transition: transform 0.18s ease, opacity 0.15s; }
+.date-sep:hover .sep-chev, .week-sep:hover .sep-chev { opacity: 1; }
+.date-sep.collapsed .sep-chev, .week-sep.collapsed .sep-chev { transform: rotate(-90deg); }
+.week-sep { grid-column: 1/-1; font-family: var(--serif); font-size: clamp(17px, 2.6vw, 21px); font-weight: 400; color: var(--text); padding: 18px 2px 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.week-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 8px; }
+.week-sep .sep-chev { font-size: 0.8em; }
+.batch-sentinel { grid-column: 1/-1; height: 1px; }
 .month-picker-wrap { position: relative; display: inline-flex; }
 .month-picker-btn { padding: 8px 13px; border-radius: 9px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03); color: var(--text2); border: 1px solid rgba(255,255,255,0.07); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
 .month-picker-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.12); }
@@ -264,6 +267,7 @@ input { font-family: var(--font); outline: none; }
   .login-box { padding: 28px 20px; }
   .gallery-grid { gap: 1px; }
   .date-sep { font-size: clamp(22px, 6.5vw, 30px); padding: 28px 0 10px; }
+  .week-sep { font-size: 16px; padding: 14px 0 8px; }
   .lb-top { background: linear-gradient(rgba(0,0,0,0.9), transparent); }
   .lb-bottom { background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
   .ss-panel, .lb-hud, .scroll-top, .toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(24, 24, 27, 0.98); }
@@ -333,7 +337,7 @@ input { font-family: var(--font); outline: none; }
         <button class="shuffle-btn" onclick="app.sortFiles('shuffle')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> 셔플</button>
         <button class="sort-btn sort-name" id="sortNameBtn" onclick="app.toggleNameSort()"><span class="sort-icon">A</span> 이름 <span class="sort-arrow" id="sortNameArrow">↑</span></button>
         <button class="sort-btn sort-size" id="sortSizeBtn" onclick="app.toggleSizeSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> 크기 <span class="sort-arrow" id="sortSizeArrow">↑</span></button>
-        <button class="sort-btn sort-date" id="sortDateBtn" onclick="app.toggleDateSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 날짜 <span class="sort-arrow" id="sortDateArrow">↑</span></button>
+        <button class="sort-btn sort-date" id="sortDateBtn" onclick="app.toggleDateSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 날짜 <span class="sort-arrow" id="sortDateArrow">↓</span></button>
         <div class="month-picker-wrap">
           <button class="month-picker-btn" id="monthPickerBtn" onclick="app.toggleMonthPicker()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>연/월</button>
           <div class="month-picker-panel" id="monthPickerPanel"></div>
@@ -510,6 +514,7 @@ const app = {
   rootDriveId: null,
   navStack: [],
   currentFolderId: null,
+  _mergedIds: null,
   currentFiles: [],
   originalFiles: [],  // preserve original order for unshuffle
   shuffled: false,
@@ -577,6 +582,8 @@ const app = {
   _spacerObs: null,
   // Date separator
   _lastRenderedMonth: null,
+  _lastRenderedWeek: null,
+  _collapsedKeys: new Set(),
   // Month filter
   _monthFilter: null,
   _preMonthFiles: [],
@@ -776,7 +783,7 @@ const app = {
     const _mBtn = document.getElementById('monthPickerBtn'); if (_mBtn) { _mBtn.classList.remove('active'); _mBtn.classList.remove('filtered'); }
     this._favMode = false;
     this._trashMode = false;
-    this._currentSort = 'date_asc';
+    this._currentSort = 'date_desc';
     this._favFilter = 'all';
     this._orientFilter = 'all';
     this._favStatusFilter = 'all';
@@ -790,7 +797,7 @@ const app = {
     const dateArrow = document.getElementById('sortDateArrow');
     if (nameArrow) nameArrow.textContent = '↑';
     if (sizeArrow) sizeArrow.textContent = '↑';
-    if (dateArrow) dateArrow.textContent = '↑';
+    if (dateArrow) dateArrow.textContent = '↓';
 
     this.showScreen('mainScreen');
     this.renderBreadcrumb();
@@ -825,13 +832,13 @@ const app = {
         try {
           const allFiles = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
           files = allFiles.filter(f => !this.hiddenSet.has(f.origDriveId));
-          // Auto-sort by date (oldest first)
+          // Auto-sort by date (newest first)
           files.sort((a, b) => {
             const at = a.mtime || 0, bt = b.mtime || 0;
             if (!at && !bt) return 0;
             if (!at) return 1;
             if (!bt) return -1;
-            return at - bt;
+            return bt - at;
           });
           this.currentFiles = files;
         } catch (e) { console.error(e); this.toast('인덱스 복호화 실패'); }
@@ -929,9 +936,11 @@ const app = {
           for (const f of items) {
             const folderId = f.id;
             const folderName = this.esc(f.name);
-            const onclick = isMovChild
-              ? `app.navStack.push({id:'${movFolder.id}',name:'0_MOV'});app.openFolder('${folderId}','${folderName}')`
-              : `app.openFolder('${folderId}','${folderName}')`;
+            const onclick = f._virtualClick
+              ? f._virtualClick
+              : isMovChild
+                ? `app.navStack.push({id:'${movFolder.id}',name:'0_MOV'});app.openFolder('${folderId}','${folderName}')`
+                : `app.openFolder('${folderId}','${folderName}')`;
             g += `<div class="folder-card" onclick="${onclick}">
               <span class="fc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
               <span class="fc-name">${folderName}</span>
@@ -941,7 +950,12 @@ const app = {
           return g;
         };
 
-        h += renderGroup('Video', '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>', '#007AFF', movChildren, true);
+        const _mwLs = movChildren.find(f => f.name === '1.Landscape');
+        const _mwLf = movChildren.find(f => f.name === '3.Longform');
+        const videoItems = (_mwLs && _mwLf)
+          ? [...movChildren, { id: '__mergedwide__', name: '가로 통합', _virtualClick: `app.openMergedWide('${_mwLs.id}','${_mwLf.id}')` }]
+          : movChildren;
+        h += renderGroup('Video', '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>', '#007AFF', videoItems, true);
         h += renderGroup('Portrait', '<rect x="6" y="3" width="12" height="18" rx="2"/>', '#AF52DE', portraits, false);
         h += renderGroup('Landscape', '<rect x="3" y="6" width="18" height="12" rx="2"/>', '#34C759', landscapes, false);
       } else {
@@ -1036,6 +1050,8 @@ const app = {
     const BATCH = this._isMobile ? 30 : 50;
     this._galleryLoaded = 0;
     this._lastRenderedMonth = null;
+    this._lastRenderedWeek = null;
+    this._collapsedKeys = new Set();
 
     // Lazy thumb observer
     if (this._thumbObserver) this._thumbObserver.disconnect();
@@ -1057,33 +1073,59 @@ const app = {
       const showDateSep = this._currentSort === 'date_asc' || this._currentSort === 'date_desc';
       for (let i = this._galleryLoaded; i < end; i++) {
         const file = this.currentFiles[i];
-        // Date separator
+        // Date separator (month + collapsible week)
+        let _mKey = null, _wKey = null;
         if (showDateSep) {
-          const monthKey = file.mtime
+          _mKey = file.mtime
             ? `${new Date(file.mtime).getFullYear()}-${String(new Date(file.mtime).getMonth()+1).padStart(2,'0')}`
             : '__none__';
-          if (monthKey !== this._lastRenderedMonth) {
-            this._lastRenderedMonth = monthKey;
+          if (_mKey !== this._lastRenderedMonth) {
+            this._lastRenderedMonth = _mKey;
+            this._lastRenderedWeek = null;
+            const mk = _mKey;
             const sep = document.createElement('div');
-            sep.className = 'date-sep';
+            sep.className = 'date-sep' + (this._collapsedKeys.has(mk) ? ' collapsed' : '');
+            sep.dataset.month = mk;
+            sep.onclick = () => this.toggleSection(mk);
             if (file.mtime) {
               const d = new Date(file.mtime);
-              sep.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${d.getFullYear()}년 ${d.getMonth()+1}월`;
+              sep.innerHTML = `<span class="sep-chev">▾</span>${d.getFullYear()}년 ${d.getMonth()+1}월`;
             } else {
-              sep.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>날짜 없음`;
+              sep.innerHTML = `<span class="sep-chev">▾</span>날짜 없음`;
             }
             frag.appendChild(sep);
+          }
+          if (file.mtime) {
+            const d = new Date(file.mtime);
+            _wKey = `${_mKey}-W${Math.ceil(d.getDate()/7)}`;
+            if (_wKey !== this._lastRenderedWeek) {
+              this._lastRenderedWeek = _wKey;
+              const mk = _mKey, wk = _wKey;
+              const wsep = document.createElement('div');
+              wsep.className = 'week-sep' + (this._collapsedKeys.has(wk) ? ' collapsed' : '');
+              wsep.dataset.month = mk;
+              wsep.dataset.week = wk;
+              if (this._collapsedKeys.has(mk)) wsep.style.display = 'none';
+              wsep.onclick = () => this.toggleSection(wk);
+              wsep.innerHTML = `<span class="sep-chev">▾</span>${Math.ceil(d.getDate()/7)}주차`;
+              frag.appendChild(wsep);
+            }
           }
         }
         const el = document.createElement('div');
         el.className = 'gallery-item' + (this.selectedSet.has(file.origDriveId) ? ' selected' : '');
         el.dataset.idx = i;
+        if (_mKey) {
+          el.dataset.month = _mKey;
+          if (_wKey) el.dataset.week = _wKey;
+          if (this._collapsedKeys.has(_mKey) || (_wKey && this._collapsedKeys.has(_wKey))) el.style.display = 'none';
+        }
         el.onclick = (e) => {
           if (e.target.closest('.sel-check')) return;
           this.openLightbox(i);
         };
         const cached = this.thumbCache.get(file.thumbDriveId);
-        let ih = cached ? `<img src="${cached}">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
+        let ih = cached ? `<img src="${cached}" decoding="async">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
         if (file.type?.startsWith('video/')) ih += `<div class="vid-badge">▶</div>`;
         if (this.favSet.has(file.origDriveId)) ih += `<div class="fav-badge">❤</div>`;
         if (file._folderName) {
@@ -1100,11 +1142,16 @@ const app = {
       grid.appendChild(frag);
       for (const el of toObserve) this._thumbObserver.observe(el);
       this._galleryLoaded = end;
+      const oldSent = grid.querySelector('.batch-sentinel');
+      if (oldSent) oldSent.remove();
       if (this._galleryLoaded < this.currentFiles.length) {
+        const sent = document.createElement('div');
+        sent.className = 'batch-sentinel';
+        grid.appendChild(sent);
         const obs = new IntersectionObserver(entries => {
-          if (entries[0].isIntersecting) { obs.disconnect(); this._galleryLoadBatch(); }
+          if (entries[0].isIntersecting) { obs.disconnect(); sent.remove(); this._galleryLoadBatch(); }
         });
-        obs.observe(grid.lastElementChild);
+        obs.observe(sent);
       }
     };
     this._galleryLoadBatch();
@@ -1153,6 +1200,7 @@ const app = {
       if (isPreview) {
         const img = document.createElement('img');
         img.src = url;
+        img.decoding = 'async';
         const placeholder = el.querySelector('div:first-child');
         if (placeholder && !placeholder.classList.contains('li-badge') && !placeholder.classList.contains('li-vid')) {
           el.insertBefore(img, el.firstChild);
@@ -1160,7 +1208,7 @@ const app = {
         }
       } else {
         const ph = el.querySelector('.loading-placeholder');
-        if (ph) { const img = document.createElement('img'); img.src = url; el.insertBefore(img, ph); ph.remove(); }
+        if (ph) { const img = document.createElement('img'); img.src = url; img.decoding = 'async'; el.insertBefore(img, ph); ph.remove(); }
       }
     } catch {}
   },
@@ -1965,6 +2013,107 @@ const app = {
     this._applyLuckyGridSize();
   },
 
+  async _resolveMergedIds() {
+    if (this._mergedIds) return this._mergedIds;
+    try {
+      const rootFolders = await Drive.listFolders(this.rootDriveId);
+      const mov = rootFolders.find(f => f.name === '0_MOV');
+      if (!mov) return null;
+      const kids = await Drive.listFolders(mov.id);
+      const ls = kids.find(f => f.name === '1.Landscape');
+      const lf = kids.find(f => f.name === '3.Longform');
+      if (!ls || !lf) return null;
+      this._mergedIds = { lsId: ls.id, lfId: lf.id };
+      return this._mergedIds;
+    } catch { return null; }
+  },
+
+  async openMergedWide(lsId, lfId) {
+    if (lsId && lfId) this._mergedIds = { lsId, lfId };
+
+    this._favMode = false;
+    this._trashMode = false;
+    this.navStack = [{ id: '__mergedwide__', name: '가로 통합' }];
+    this.currentFolderId = '__mergedwide__';
+
+    this.stopSlideshow(true);
+    if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
+    this.preloadCache.forEach(u => URL.revokeObjectURL(u));
+    this.preloadCache.clear();
+    this._thumbQueue = [];
+    this.shuffled = false;
+    this.selectedSet.clear(); this._lastSelectedIdx = -1;
+    this.originalFiles = [];
+    this._currentSort = 'date_desc';
+    this._favFilter = 'all';
+    this._orientFilter = 'all';
+    this._favStatusFilter = 'all';
+    this._folderFilesCache = null;
+    this._monthFilter = null; this._preMonthFiles = [];
+    const _mwChip = document.getElementById('monthFilterChip'); if (_mwChip) _mwChip.remove();
+    const _mwPanel = document.getElementById('monthPickerPanel'); if (_mwPanel) _mwPanel.classList.remove('open');
+    const _mwBtn = document.getElementById('monthPickerBtn'); if (_mwBtn) { _mwBtn.classList.remove('active'); _mwBtn.classList.remove('filtered'); }
+
+    this.showScreen('mainScreen');
+    this.renderBreadcrumb();
+    if (!this._skipHistory) { this._saveScrollToHistory(); history.pushState({ view: 'mergedwide' }, ''); }
+
+    const area = document.getElementById('contentArea');
+    const toolbar = document.getElementById('toolbar');
+    toolbar.style.display = 'none';
+    area.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`;
+
+    try {
+      const ids = await this._resolveMergedIds();
+      if (!ids) { area.innerHTML = `<div class="empty-state">1.Landscape / 3.Longform 폴더를 찾을 수 없습니다.</div>`; return; }
+      const parts = await Promise.all([
+        { fid: ids.lsId, fname: '1.Landscape' },
+        { fid: ids.lfId, fname: '3.Longform' }
+      ].map(async ({ fid, fname }) => {
+        const indexId = await Drive.findFile('_index.enc', fid);
+        if (!indexId) return [];
+        const files = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
+        return files.filter(f => !this.hiddenSet.has(f.origDriveId)).map(f => ({ ...f, _folderId: fid, _folderName: fname }));
+      }));
+      const merged = [...parts[0], ...parts[1]];
+      merged.sort((a, b) => {
+        const at = a.mtime || 0, bt = b.mtime || 0;
+        if (!at && !bt) return 0;
+        if (!at) return 1;
+        if (!bt) return -1;
+        return bt - at;
+      });
+      this.currentFiles = merged;
+      this.originalFiles = [...merged];
+
+      toolbar.style.display = 'flex';
+      this._updateFileCount();
+      const nameArrow = document.getElementById('sortNameArrow');
+      const dateArrow = document.getElementById('sortDateArrow');
+      if (nameArrow) nameArrow.textContent = '↑';
+      if (dateArrow) dateArrow.textContent = '↓';
+
+      let filterDiv = document.getElementById('favFilterDiv');
+      if (!filterDiv) {
+        filterDiv = document.createElement('div');
+        filterDiv.id = 'favFilterDiv';
+        filterDiv.className = 'fav-filter';
+        filterDiv.innerHTML = this._getFilterHTML(true);
+        toolbar.insertBefore(filterDiv, toolbar.querySelector('.spacer'));
+      } else {
+        filterDiv.style.display = 'flex';
+        filterDiv.innerHTML = this._getFilterHTML(true);
+      }
+
+      area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
+      this.renderGallery();
+      this._updateFilterIndicator();
+    } catch (e) {
+      console.error(e);
+      area.innerHTML = `<div class="empty-state">❌ ${this.esc(e.message)}</div>`;
+    }
+  },
+
   openRandom1000() {
     if (!this._r1000Cache || !this._r1000Cache.length) return;
     this._favMode = false;
@@ -2138,6 +2287,7 @@ const app = {
     grid.innerHTML = '';
     this._thumbQueue = [];
     this._lastRenderedMonth = null;
+    this._lastRenderedWeek = null;
 
     const buffer = this._isMobile ? 50 : 100;
     const BATCH = this._isMobile ? 30 : 50;
@@ -2148,7 +2298,7 @@ const app = {
 
     // Calculate spacer height for skipped items
     if (startIdx > 0) {
-      const gap = 8;
+      const gap = 1;
       const cols = Math.max(1, Math.floor((grid.clientWidth + gap) / (this.gridSize + gap)));
       const rowH = this.gridSize + gap;
       const skipRows = Math.ceil(startIdx / cols);
@@ -2183,7 +2333,7 @@ const app = {
     if (!spacer || this._spacerEndIdx <= 0) return;
 
     const BATCH = this._isMobile ? 30 : 50;
-    const gap = 8;
+    const gap = 1;
     const cols = Math.max(1, Math.floor((grid.clientWidth + gap) / (this.gridSize + gap)));
     const rowH = this.gridSize + gap;
 
@@ -2194,31 +2344,54 @@ const app = {
     const frag = document.createDocumentFragment();
     const toObserve = [];
     const showDateSep = this._currentSort === 'date_asc' || this._currentSort === 'date_desc';
-    let prevMonth = null;
+    let prevMonth = null, prevWeek = null;
     for (let i = loadFrom; i < loadTo; i++) {
       const file = this.currentFiles[i];
       if (!file) continue;
-      // Date separator
+      // Date separator (month + collapsible week)
+      let _mKey = null, _wKey = null;
       if (showDateSep && file.mtime) {
         const d = new Date(file.mtime);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-        if (monthKey !== prevMonth) {
-          prevMonth = monthKey;
+        _mKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        _wKey = `${_mKey}-W${Math.ceil(d.getDate()/7)}`;
+        if (_mKey !== prevMonth) {
+          prevMonth = _mKey;
+          prevWeek = null;
+          const mk = _mKey;
           const sep = document.createElement('div');
-          sep.className = 'date-sep';
-          sep.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${d.getFullYear()}년 ${d.getMonth()+1}월`;
+          sep.className = 'date-sep' + (this._collapsedKeys.has(mk) ? ' collapsed' : '');
+          sep.dataset.month = mk;
+          sep.onclick = () => this.toggleSection(mk);
+          sep.innerHTML = `<span class="sep-chev">▾</span>${d.getFullYear()}년 ${d.getMonth()+1}월`;
           frag.appendChild(sep);
+        }
+        if (_wKey !== prevWeek) {
+          prevWeek = _wKey;
+          const mk = _mKey, wk = _wKey;
+          const wsep = document.createElement('div');
+          wsep.className = 'week-sep' + (this._collapsedKeys.has(wk) ? ' collapsed' : '');
+          wsep.dataset.month = mk;
+          wsep.dataset.week = wk;
+          if (this._collapsedKeys.has(mk)) wsep.style.display = 'none';
+          wsep.onclick = () => this.toggleSection(wk);
+          wsep.innerHTML = `<span class="sep-chev">▾</span>${Math.ceil(d.getDate()/7)}주차`;
+          frag.appendChild(wsep);
         }
       }
       const el = document.createElement('div');
       el.className = 'gallery-item';
       el.dataset.idx = i;
+      if (_mKey) {
+        el.dataset.month = _mKey;
+        el.dataset.week = _wKey;
+        if (this._collapsedKeys.has(_mKey) || this._collapsedKeys.has(_wKey)) el.style.display = 'none';
+      }
       el.onclick = (e) => {
         if (e.target.closest('.sel-check')) return;
         this.openLightbox(i);
       };
       const cached = this.thumbCache.get(file.thumbDriveId);
-      let ih = cached ? `<img src="${cached}">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
+      let ih = cached ? `<img src="${cached}" decoding="async">` : `<div class="loading-placeholder"><div class="spinner"></div></div>`;
       if (file.type?.startsWith('video/')) ih += `<div class="vid-badge">▶</div>`;
       if (this.favSet.has(file.origDriveId)) ih += `<div class="fav-badge">❤</div>`;
       const dateStr = file.mtime ? new Date(file.mtime).toISOString().slice(0, 10) : '';
@@ -2236,19 +2409,20 @@ const app = {
     // Remove duplicate date separator between upward batch and existing items
     if (showDateSep && prevMonth) {
       // Find the first existing element after our inserted items
-      const allItems = grid.querySelectorAll('.gallery-item, .date-sep');
+      const allItems = grid.querySelectorAll('.gallery-item');
       for (const node of allItems) {
-        if (node.classList.contains('gallery-item') && parseInt(node.dataset.idx) >= loadTo) {
-          // Check the element right before this first existing item
-          const prev = node.previousElementSibling;
-          if (prev && prev.classList.contains('date-sep')) {
-            // Check month by looking at the first existing item's month
-            const existFile = this.currentFiles[parseInt(node.dataset.idx)];
-            if (existFile?.mtime) {
-              const ed = new Date(existFile.mtime);
-              const existMonth = `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}`;
-              if (existMonth === prevMonth) prev.remove();
-            }
+        if (parseInt(node.dataset.idx) >= loadTo) {
+          // Collect separators sitting right above the first existing item,
+          // remove those duplicating what this upward batch just rendered
+          const seps = [];
+          let prev = node.previousElementSibling;
+          while (prev && (prev.classList.contains('date-sep') || prev.classList.contains('week-sep'))) {
+            seps.push(prev);
+            prev = prev.previousElementSibling;
+          }
+          for (const sp of seps) {
+            if (sp.classList.contains('week-sep') && sp.dataset.week === prevWeek) sp.remove();
+            else if (sp.classList.contains('date-sep') && sp.dataset.month === prevMonth) sp.remove();
           }
           break;
         }
@@ -2287,7 +2461,7 @@ const app = {
   },
 
   // ===== SORT =====
-  _currentSort: 'date_asc',
+  _currentSort: 'date_desc',
 
   toggleNameSort() {
     const newMode = this._currentSort === 'name_asc' ? 'name_desc' : 'name_asc';
@@ -2591,6 +2765,29 @@ const app = {
     return html;
   },
 
+  toggleSection(key) {
+    if (!key) return;
+    if (this._collapsedKeys.has(key)) this._collapsedKeys.delete(key);
+    else this._collapsedKeys.add(key);
+    this._applySectionVis();
+  },
+
+  _applySectionVis() {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
+    grid.querySelectorAll('.date-sep[data-month]').forEach(el => {
+      el.classList.toggle('collapsed', this._collapsedKeys.has(el.dataset.month));
+    });
+    grid.querySelectorAll('.week-sep').forEach(el => {
+      el.style.display = this._collapsedKeys.has(el.dataset.month) ? 'none' : '';
+      el.classList.toggle('collapsed', this._collapsedKeys.has(el.dataset.week));
+    });
+    grid.querySelectorAll('.gallery-item[data-month]').forEach(el => {
+      const hide = this._collapsedKeys.has(el.dataset.month) || (el.dataset.week && this._collapsedKeys.has(el.dataset.week));
+      el.style.display = hide ? 'none' : '';
+    });
+  },
+
   _isPortrait(f) {
     const n = f._folderName || '';
     return /^\d+$/.test(n) || n.startsWith('Soft_') || n === '2.Portrait' || n === '3.Longform';
@@ -2730,7 +2927,7 @@ const app = {
     const favStBtns = document.querySelectorAll('#favFilterDiv [data-filter="favst"]');
     if (favStBtns[favStIdx[this._favStatusFilter]]) favStBtns[favStIdx[this._favStatusFilter]].classList.add('active');
 
-    if (this._currentSort !== 'date_asc') this.sortFiles(this._currentSort);
+    if (this._currentSort !== 'date_desc') this.sortFiles(this._currentSort);
     else this.renderGallery();
     this._updateFilterIndicator();
   },
@@ -2880,7 +3077,7 @@ const app = {
 
       const cached = this.thumbCache.get(file.thumbDriveId);
       if (cached) {
-        el.innerHTML = `<img src="${cached}">`;
+        el.innerHTML = `<img src="${cached}" decoding="async">`;
       } else if (file.thumbDriveId) {
         el.innerHTML = `<div class="loading-placeholder"><div class="spinner"></div></div>`;
         el.dataset.thumbId = file.thumbDriveId;
@@ -3459,6 +3656,8 @@ window.addEventListener('popstate', e => {
       app.openFavorites();
     } else if (s.view === 'random1000') {
       app.openRandom1000();
+    } else if (s.view === 'mergedwide') {
+      app.openMergedWide();
     } else if (s.view === 'trash') {
       app.openTrash();
     }
