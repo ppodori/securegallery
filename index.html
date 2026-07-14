@@ -1327,7 +1327,7 @@ const app = {
       const ss = document.getElementById('ssPanel');
       if (ss && ss.classList.contains('open')) { this._armChromeTimer(); return; }
       document.getElementById('lightbox').classList.remove('chrome-show');
-    }, 3000);
+    }, 2000);
   },
 
   _hideChrome() {
@@ -1448,6 +1448,9 @@ const app = {
       video.playsInline = true;
       video.preload = 'auto';
       video.addEventListener('ended', () => { if (this.ssRunning) this.ssAutoNext(); });
+      // iOS: call play() while the user-gesture activation window is still open;
+      // this also kicks WebKit into loading, so loadeddata below fires promptly.
+      video.play().catch(() => {});
       await new Promise(r => { video.onloadeddata = r; setTimeout(r, timeout); });
       wrap.appendChild(video);
     } else {
@@ -2299,7 +2302,16 @@ const app = {
   },
 
   _playAllMedia() {
-    document.querySelectorAll('#lbContent video').forEach(v => v.play().catch(()=>{}));
+    document.querySelectorAll('#lbContent video').forEach(v => v.play().catch(() => {
+      // Autoplay blocked (activation window expired): resume on the next tap/click
+      const resume = () => {
+        v.play().catch(() => {});
+        document.removeEventListener('touchend', resume);
+        document.removeEventListener('click', resume);
+      };
+      document.addEventListener('touchend', resume);
+      document.addEventListener('click', resume);
+    }));
   },
 
   _layoutMultiView(c) {
