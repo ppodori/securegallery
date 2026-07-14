@@ -207,6 +207,12 @@ input { font-family: var(--font); outline: none; }
 .lb-nav.next { right: 24px; }
 .lightbox:fullscreen .lb-nav { opacity: 0; pointer-events: none; }
 .lightbox:fullscreen .lb-nav.edge-hover { opacity: 1; pointer-events: auto; }
+.lightbox.immersive .lb-top, .lightbox.immersive .lb-bottom { position: absolute; left: 0; right: 0; z-index: 25; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.lightbox.immersive .lb-top { top: 0; background: linear-gradient(rgba(8,7,6,0.85), transparent); }
+.lightbox.immersive .lb-bottom { bottom: 0; background: linear-gradient(transparent, rgba(8,7,6,0.85)); }
+.lightbox.immersive .lb-body { position: absolute; inset: 0; }
+.lightbox.immersive .lb-nav, .lightbox.immersive .lb-fav-btn, .lightbox.immersive .lb-goto-btn { opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.lightbox.immersive.chrome-show .lb-top, .lightbox.immersive.chrome-show .lb-bottom, .lightbox.immersive.chrome-show .lb-nav, .lightbox.immersive.chrome-show .lb-fav-btn, .lightbox.immersive.chrome-show .lb-goto-btn { opacity: 1; pointer-events: auto; }
 .lb-hud { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 17, 13, 0.85); backdrop-filter: blur(16px); border: 1px solid #322c25; border-radius: 12px; padding: 24px 40px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 30; box-shadow: var(--shadow-lg); }
 .lb-hud.show { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
 .lb-hud .hud-icon { font-size: 36px; margin-bottom: 8px; color: #fff; }
@@ -556,6 +562,7 @@ const app = {
   treeCache: {},
   // Slideshow
   ssTimer: null,
+  _chromeTimer: null,
   ssRunning: false,
   ssOrder: 'seq',
   ssInterval: 6,
@@ -1282,6 +1289,7 @@ const app = {
   async openLightbox(i) {
     this.lbIndex = i;
     document.getElementById('lightbox').classList.add('active');
+    if (this._isStandalone) { document.getElementById('lightbox').classList.add('immersive'); this._showChrome(); }
     document.body.style.overflow = 'hidden';
     this.closeSSPanel();
     if (!this._skipHistory) { this._saveScrollToHistory(); history.pushState({ view: 'lightbox' }, ''); }
@@ -1294,6 +1302,8 @@ const app = {
     if (this.bgPreloadAbort) this.bgPreloadAbort.abort = true;
     if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
     document.getElementById('lightbox').classList.remove('active');
+    this._hideChrome();
+    document.getElementById('lightbox').classList.remove('immersive');
     document.body.style.overflow = '';
     this._stopAllMedia();
     document.getElementById('lbContent').innerHTML = '';
@@ -1301,6 +1311,28 @@ const app = {
       const idx = this.lbIndex;
       setTimeout(() => this.scrollToItem(idx), 50);
     }
+  },
+
+  // ===== IMMERSIVE CHROME (touch) =====
+  _showChrome() {
+    const lb = document.getElementById('lightbox');
+    if (!lb.classList.contains('immersive')) return;
+    lb.classList.add('chrome-show');
+    this._armChromeTimer();
+  },
+
+  _armChromeTimer() {
+    clearTimeout(this._chromeTimer);
+    this._chromeTimer = setTimeout(() => {
+      const ss = document.getElementById('ssPanel');
+      if (ss && ss.classList.contains('open')) { this._armChromeTimer(); return; }
+      document.getElementById('lightbox').classList.remove('chrome-show');
+    }, 3000);
+  },
+
+  _hideChrome() {
+    clearTimeout(this._chromeTimer);
+    document.getElementById('lightbox').classList.remove('chrome-show');
   },
 
   async lbNav(d) {
@@ -1635,6 +1667,7 @@ const app = {
     this.ssKenBurns = kbEl?.checked || false;
     this.ssRunning = true;
     document.querySelectorAll('#lbContent video').forEach(v => { v.controls = false; });
+    this._hideChrome();
     this.closeSSPanel();
     document.getElementById('lbSSBtn').classList.add('active');
     document.getElementById('lbSSBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
@@ -3508,6 +3541,22 @@ document.getElementById('lbBody')?.addEventListener('wheel', e => {
 // ===== SWIPE =====
 document.getElementById('lbBody')?.addEventListener('touchstart', e => app.onTouchStart(e), {passive:true});
 document.getElementById('lbBody')?.addEventListener('touchend', e => app.onTouchEnd(e));
+
+// Immersive mode (iOS standalone): tap toggles lightbox chrome
+(function() {
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+  let tx = 0, ty = 0;
+  lb.addEventListener('touchstart', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    if (!lb.classList.contains('immersive')) return;
+    const t = e.changedTouches[0];
+    if (Math.abs(t.clientX - tx) > 10 || Math.abs(t.clientY - ty) > 10) return;
+    if (e.target.closest('.lb-top, .lb-bottom, .lb-nav, .lb-fav-btn, .lb-goto-btn')) { app._armChromeTimer(); return; }
+    if (lb.classList.contains('chrome-show')) app._hideChrome();
+    else app._showChrome();
+  });
+})();
 
 // ===== MOUSE BUTTONS =====
 document.getElementById('lbBody')?.addEventListener('mousedown', e => {
