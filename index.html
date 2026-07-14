@@ -408,8 +408,8 @@ input { font-family: var(--font); outline: none; }
     <div class="ss-panel" id="ssPanel">
       <h4>슬라이드쇼 설정</h4>
       <div class="ss-row"><label>간격</label>
-        <div class="ss-dd" id="ssIntervalDD" data-value="4">
-          <button type="button" class="ss-dd-btn" onclick="app._toggleSSDD('ssIntervalDD', event)"><span class="ss-dd-label">4초</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="ss-dd" id="ssIntervalDD" data-value="6">
+          <button type="button" class="ss-dd-btn" onclick="app._toggleSSDD('ssIntervalDD', event)"><span class="ss-dd-label">6초</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
           <div class="ss-dd-menu">
             <div class="ss-dd-item" data-value="4" onclick="app._selectSSDD('ssIntervalDD','4','4초')">4초</div>
             <div class="ss-dd-item" data-value="6" onclick="app._selectSSDD('ssIntervalDD','6','6초')">6초</div>
@@ -427,7 +427,7 @@ input { font-family: var(--font); outline: none; }
           </div>
         </div>
       </div>
-      <div class="ss-row" style="margin-top:8px;margin-bottom:0;"><label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;width:auto;"><input type="checkbox" id="ssKenBurns" style="width:14px;height:14px;accent-color:var(--accent);margin:0;"> 확대</label><div style="flex:1"></div><button style="background:var(--accent);color:#141210;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:700;font-family:var(--mono)" onclick="app.startSlideshow()">시작</button></div>
+      <div class="ss-row" style="margin-top:8px;margin-bottom:0;"><label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;width:auto;"><input type="checkbox" id="ssKenBurns" checked style="width:14px;height:14px;accent-color:var(--accent);margin:0;"> 확대</label><div style="flex:1"></div><button style="background:var(--accent);color:#141210;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:700;font-family:var(--mono)" onclick="app.startSlideshow()">시작</button></div>
     </div>
   </div>
   <div id="lbToast" style="position:absolute;top:60%;left:50%;transform:translateX(-50%);background:rgba(20,17,13,0.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid #322c25;color:var(--text);padding:8px 18px;border-radius:6px;font-size:12px;letter-spacing:0.04em;font-family:var(--mono);z-index:50;opacity:0;transition:opacity 0.3s;pointer-events:none"></div>
@@ -550,14 +550,16 @@ const app = {
   gridSize: parseInt(localStorage.getItem('sg_gridSize')) || 160,
   // Mobile detection
   _isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+  // iOS home-screen web app (standalone) detection
+  _isStandalone: navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches),
   // Sidebar tree cache: folderId -> [{id,name}]
   treeCache: {},
   // Slideshow
   ssTimer: null,
   ssRunning: false,
   ssOrder: 'seq',
-  ssInterval: 4,
-  ssKenBurns: false,
+  ssInterval: 6,
+  ssKenBurns: true,
   // Swipe
   touchStartX: 0,
   touchStartY: 0,
@@ -1400,7 +1402,16 @@ const app = {
       const video = document.createElement('video');
       this._createdVideos.add(video);
       video.src = url;
-      video.controls = true;
+      video.controls = !this.ssRunning;
+      // Slideshow: keep native controls hidden until the user actually interacts.
+      // Coordinate guard filters the synthetic mousemove Chromium fires when a new element appears under a stationary cursor.
+      let _mx = null, _my = null;
+      video.addEventListener('mousemove', (e) => {
+        if (video.controls) return;
+        if (_mx === null) { _mx = e.clientX; _my = e.clientY; return; }
+        if (Math.abs(e.clientX - _mx) + Math.abs(e.clientY - _my) > 4) video.controls = true;
+      });
+      video.addEventListener('touchstart', () => { video.controls = true; }, { passive: true });
       video.loop = true;
       video.playsInline = true;
       video.preload = 'auto';
@@ -1465,10 +1476,12 @@ const app = {
       const scale = Math.min(cw / nw, ch / nh);
       const rw = nw * scale, rh = nh * scale;
       const offTop = (ch - rh) / 2, offLeft = (cw - rw) / 2;
-      heart.style.top = (offTop + 10) + 'px';
+      // Videos in iOS standalone web app: drop below the native controls' top strip (fullscreen/PiP triggers live there)
+      const topPad = (f.type?.startsWith('video/') && this._isStandalone) ? 62 : 10;
+      heart.style.top = (offTop + topPad) + 'px';
       heart.style.left = (offLeft + 10) + 'px';
       if (goBtn) {
-        goBtn.style.top = (offTop + 10) + 'px';
+        goBtn.style.top = (offTop + topPad) + 'px';
         goBtn.style.left = (offLeft + 48) + 'px';
       }
       // Size kb-clip to match rendered image area
@@ -1563,10 +1576,6 @@ const app = {
   toggleSSPanel() {
     const panel = document.getElementById('ssPanel');
     panel.classList.toggle('open');
-    if (panel.classList.contains('open')) {
-      const kb = document.getElementById('ssKenBurns');
-      if (kb) kb.checked = localStorage.getItem('sg_kenBurns') === '1';
-    }
   },
 
   closeSSPanel() {
@@ -1621,11 +1630,11 @@ const app = {
     const intervalDD = document.getElementById('ssIntervalDD');
     const orderDD = document.getElementById('ssOrderDD');
     const kbEl = document.getElementById('ssKenBurns');
-    this.ssInterval = parseInt(intervalDD?.dataset.value) || 4;
+    this.ssInterval = parseInt(intervalDD?.dataset.value) || 6;
     this.ssOrder = orderDD?.dataset.value || 'seq';
     this.ssKenBurns = kbEl?.checked || false;
-    if (kbEl) localStorage.setItem('sg_kenBurns', this.ssKenBurns ? '1' : '0');
     this.ssRunning = true;
+    document.querySelectorAll('#lbContent video').forEach(v => { v.controls = false; });
     this.closeSSPanel();
     document.getElementById('lbSSBtn').classList.add('active');
     document.getElementById('lbSSBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
@@ -1657,6 +1666,7 @@ const app = {
     if (btn) { btn.classList.remove('active'); btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>'; btn.title = '슬라이드쇼'; }
     const video = document.querySelector('#lbContent video');
     if (video) video.loop = true;
+    document.querySelectorAll('#lbContent video').forEach(v => { v.controls = true; });
     this._applyKenBurns();
     if (!silent) this.showHud('⏸', '일시정지', '');
   },
