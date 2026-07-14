@@ -563,6 +563,7 @@ const app = {
   // Slideshow
   ssTimer: null,
   _chromeTimer: null,
+  _blessedVideos: [],
   ssRunning: false,
   ssOrder: 'seq',
   ssInterval: 6,
@@ -1287,6 +1288,7 @@ const app = {
 
   // ===== LIGHTBOX =====
   async openLightbox(i) {
+    this._blessVideoEls();
     this.lbIndex = i;
     document.getElementById('lightbox').classList.add('active');
     if (this._isStandalone) { document.getElementById('lightbox').classList.add('immersive'); this._showChrome(); }
@@ -1327,7 +1329,7 @@ const app = {
       const ss = document.getElementById('ssPanel');
       if (ss && ss.classList.contains('open')) { this._armChromeTimer(); return; }
       document.getElementById('lightbox').classList.remove('chrome-show');
-    }, 2000);
+    }, 3000);
   },
 
   _hideChrome() {
@@ -1335,7 +1337,20 @@ const app = {
     document.getElementById('lightbox').classList.remove('chrome-show');
   },
 
+  // Create <video> elements synchronously inside the user-gesture call stack.
+  // iOS unlocks audible playback per element at load()/play() call time, so these
+  // stay playable even if src arrives seconds later (download + decrypt).
+  _blessVideoEls() {
+    this._blessedVideos = [];
+    for (let k = 0; k < this.viewCount; k++) {
+      const v = document.createElement('video');
+      try { v.load(); } catch {}
+      this._blessedVideos.push(v);
+    }
+  },
+
   async lbNav(d) {
+    this._blessVideoEls();
     const step = this.viewCount > 1 ? d * this.viewCount : d;
     const n = this.lbIndex + step;
     if (n < 0 || n >= this.currentFiles.length) {
@@ -1431,7 +1446,7 @@ const app = {
     const timeout = wasCached ? 400 : 2000;
 
     if (f.type?.startsWith('video/')) {
-      const video = document.createElement('video');
+      const video = this._blessedVideos.pop() || document.createElement('video');
       this._createdVideos.add(video);
       video.src = url;
       video.controls = !this.ssRunning;
@@ -1768,6 +1783,7 @@ const app = {
   // ===== VIEW COUNT =====
   setViewCount(n) {
     this.viewCount = n;
+    this._blessVideoEls();
     document.querySelectorAll('.lb-view-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.getElementById(`lbView${n}`);
     if (activeBtn) activeBtn.classList.add('active');
