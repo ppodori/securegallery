@@ -958,9 +958,10 @@ const app = {
       };
 
       const _mwLs = movChildren.find(f => f.name === '1.Landscape');
+      const _mwPt = movChildren.find(f => f.name === '2.Portrait');
       const _mwLf = movChildren.find(f => f.name === '3.Longform');
-      const videoItems = (_mwLs && _mwLf)
-        ? [...movChildren, { id: '__mergedwide__', name: '가로 통합', _virtualClick: `app.openMergedWide('${_mwLs.id}','${_mwLf.id}')` }]
+      const videoItems = (_mwLs && _mwPt && _mwLf)
+        ? [...movChildren, { id: '__mergedwide__', name: 'All video', _virtualClick: `app.openMergedWide('${_mwLs.id}','${_mwPt.id}','${_mwLf.id}')` }]
         : movChildren;
       _videoGroupHTML = renderGroup('Video', '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>', '#c9bfae', videoItems, true);
       _otherGroupsHTML = renderGroup('Portrait', '<rect x="6" y="3" width="12" height="18" rx="2"/>', '#c9bfae', portraits, false);
@@ -2115,19 +2116,20 @@ const app = {
       if (!mov) return null;
       const kids = await Drive.listFolders(mov.id);
       const ls = kids.find(f => f.name === '1.Landscape');
+      const pt = kids.find(f => f.name === '2.Portrait');
       const lf = kids.find(f => f.name === '3.Longform');
-      if (!ls || !lf) return null;
-      this._mergedIds = { lsId: ls.id, lfId: lf.id };
+      if (!ls || !pt || !lf) return null;
+      this._mergedIds = { lsId: ls.id, ptId: pt.id, lfId: lf.id };
       return this._mergedIds;
     } catch { return null; }
   },
 
-  async openMergedWide(lsId, lfId) {
-    if (lsId && lfId) this._mergedIds = { lsId, lfId };
+  async openMergedWide(lsId, ptId, lfId) {
+    if (lsId && ptId && lfId) this._mergedIds = { lsId, ptId, lfId };
 
     this._favMode = false;
     this._trashMode = false;
-    this.navStack = [{ id: '__mergedwide__', name: '가로 통합' }];
+    this.navStack = [{ id: '__mergedwide__', name: 'All video' }];
     this.currentFolderId = '__mergedwide__';
 
     this.stopSlideshow(true);
@@ -2159,9 +2161,10 @@ const app = {
 
     try {
       const ids = await this._resolveMergedIds();
-      if (!ids) { area.innerHTML = `<div class="empty-state">1.Landscape / 3.Longform 폴더를 찾을 수 없습니다.</div>`; return; }
+      if (!ids) { area.innerHTML = `<div class="empty-state">1.Landscape / 2.Portrait / 3.Longform 폴더를 찾을 수 없습니다.</div>`; return; }
       const parts = await Promise.all([
         { fid: ids.lsId, fname: '1.Landscape' },
+        { fid: ids.ptId, fname: '2.Portrait' },
         { fid: ids.lfId, fname: '3.Longform' }
       ].map(async ({ fid, fname }) => {
         const indexId = await Drive.findFile('_index.enc', fid);
@@ -2169,7 +2172,7 @@ const app = {
         const files = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
         return files.filter(f => !this.hiddenSet.has(f.origDriveId)).map(f => ({ ...f, _folderId: fid, _folderName: fname }));
       }));
-      const merged = [...parts[0], ...parts[1]];
+      const merged = [...parts[0], ...parts[1], ...parts[2]];
       merged.sort((a, b) => {
         const at = a.mtime || 0, bt = b.mtime || 0;
         if (!at && !bt) return 0;
