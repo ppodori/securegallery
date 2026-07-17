@@ -1406,8 +1406,8 @@ const app = {
       try {
         // Load all media elements in parallel
         const allFiles = [f, ...extras];
-        const elements = await Promise.all(allFiles.map(file => this._makeMediaEl(file)));
-        if (ver !== this._showVer) return;
+        const elements = await Promise.all(allFiles.map(file => this._makeMediaEl(file, ver)));
+        if (ver !== this._showVer) { this._stopEls(elements); return; }
 
         for (const el of elements) c.appendChild(el);
 
@@ -1422,8 +1422,8 @@ const app = {
       document.getElementById('lbCounter').textContent = `${(i+1).toLocaleString()} / ${this.currentFiles.length.toLocaleString()}`;
 
       try {
-        const el = await this._makeMediaEl(f);
-        if (ver !== this._showVer) return;
+        const el = await this._makeMediaEl(f, ver);
+        if (ver !== this._showVer) { this._stopEls(el); return; }
         c.appendChild(el);
 
         requestAnimationFrame(() => requestAnimationFrame(() => c.classList.remove('fade-out')));
@@ -1433,7 +1433,7 @@ const app = {
     }
   },
 
-  async _makeMediaEl(f) {
+  async _makeMediaEl(f, _ver) {
     const wasCached = this.preloadCache.has(f.origDriveId);
     let url = this.preloadCache.get(f.origDriveId);
     if (!url) {
@@ -1466,7 +1466,11 @@ const app = {
       video.addEventListener('ended', () => { if (this.ssRunning) this.ssAutoNext(); });
       // iOS: call play() while the user-gesture activation window is still open;
       // this also kicks WebKit into loading, so loadeddata below fires promptly.
-      video.play().catch(() => {});
+      // Guard: skip if this request is stale or the lightbox was closed while decrypting,
+      // so an orphaned (never-appended) element can't keep playing audio / holding a decoder.
+      const _fresh = (_ver === undefined || _ver === this._showVer)
+        && document.getElementById('lightbox').classList.contains('active');
+      if (_fresh) video.play().catch(() => {});
       await new Promise(r => { video.onloadeddata = r; setTimeout(r, timeout); });
       wrap.appendChild(video);
     } else {
@@ -2312,6 +2316,14 @@ const app = {
   },
 
   // ===== HELPERS =====
+  // Stop videos inside elements that were built but will never be shown (stale ver)
+  _stopEls(els) {
+    (Array.isArray(els) ? els : [els]).forEach(el => {
+      if (!el || !el.querySelectorAll) return;
+      el.querySelectorAll('video').forEach(v => { try { v.pause(); v.removeAttribute('src'); v.load(); } catch {} });
+    });
+  },
+
   _stopAllMedia() {
     // Stop DOM videos
     document.querySelectorAll('#lbContent video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
