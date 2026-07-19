@@ -620,7 +620,6 @@ const app = {
   _collapsedKeys: new Set(),
   // Month filter
   _monthFilter: null,
-  _preMonthFiles: [],
 
   _saveScrollToHistory() {
     const scroll = document.getElementById('contentScroll');
@@ -811,7 +810,7 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
-    this._monthFilter = null; this._preMonthFiles = [];
+    this._monthFilter = null;
     const _mChip = document.getElementById('monthFilterChip'); if (_mChip) _mChip.remove();
     const _mPanel = document.getElementById('monthPickerPanel'); if (_mPanel) _mPanel.classList.remove('open');
     const _mBtn = document.getElementById('monthPickerBtn'); if (_mBtn) { _mBtn.classList.remove('active'); _mBtn.classList.remove('filtered'); }
@@ -1097,7 +1096,7 @@ const app = {
 
     // Lazy thumb observer
     if (this._thumbObserver) this._thumbObserver.disconnect();
-    const rootMargin = this._isMobile ? '50px' : '150px';
+    const rootMargin = this._isMobile ? '200px' : '400px';
     this._thumbObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
@@ -1214,11 +1213,19 @@ const app = {
       if (!item.el.isConnected) continue;
       // Skip gallery items that scrolled far out of view
       if (!item.isPreview && item.el.dataset.idx) {
+        // Collapsed sections: display:none items report zero rects and pass the range check below
+        if (item.el.offsetParent === null) {
+          if (item.driveId) {
+            item.el.dataset.thumbId = item.driveId;
+            this._thumbObserver?.observe(item.el);
+          }
+          continue;
+        }
         const rect = item.el.getBoundingClientRect();
         const viewH = window.innerHeight;
         if (rect.top > viewH + 800 || rect.bottom < -800) {
           // Re-add thumbId so observer can re-trigger later
-          if (item.driveId && !this.thumbCache.has(item.driveId)) {
+          if (item.driveId) {
             item.el.dataset.thumbId = item.driveId;
             this._thumbObserver?.observe(item.el);
           }
@@ -2149,7 +2156,7 @@ const app = {
     this._orientFilter = 'all';
     this._favStatusFilter = 'all';
     this._folderFilesCache = null;
-    this._monthFilter = null; this._preMonthFiles = [];
+    this._monthFilter = null;
     const _mwChip = document.getElementById('monthFilterChip'); if (_mwChip) _mwChip.remove();
     const _mwPanel = document.getElementById('monthPickerPanel'); if (_mwPanel) _mwPanel.classList.remove('open');
     const _mwBtn = document.getElementById('monthPickerBtn'); if (_mwBtn) { _mwBtn.classList.remove('active'); _mwBtn.classList.remove('filtered'); }
@@ -2186,6 +2193,7 @@ const app = {
       });
       this.currentFiles = merged;
       this.originalFiles = [...merged];
+      this._folderFilesCache = [...merged];
 
       toolbar.style.display = 'flex';
       this._updateFileCount();
@@ -2230,7 +2238,7 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
-    this._monthFilter = null; this._preMonthFiles = [];
+    this._monthFilter = null;
     const _mr1kChip = document.getElementById('monthFilterChip'); if (_mr1kChip) _mr1kChip.remove();
     const _mr1kPanel = document.getElementById('monthPickerPanel'); if (_mr1kPanel) _mr1kPanel.classList.remove('open');
     const _mr1kBtn = document.getElementById('monthPickerBtn'); if (_mr1kBtn) { _mr1kBtn.classList.remove('active'); _mr1kBtn.classList.remove('filtered'); }
@@ -2654,17 +2662,6 @@ const app = {
     }
     this._currentSort = mode;
     this.shuffled = (mode === 'shuffle');
-    // Re-apply month filter after sort
-    if (this._monthFilter) {
-      this._preMonthFiles = [...this.currentFiles];
-      this.originalFiles = this._preMonthFiles;
-      this.currentFiles = this._preMonthFiles.filter(f => {
-        if (!f.mtime) return false;
-        const d = new Date(f.mtime);
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === this._monthFilter;
-      });
-      this._updateFileCount();
-    }
     this.renderGallery();
 
     // Update button arrows and active states
@@ -2822,7 +2819,7 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
-    this._monthFilter = null; this._preMonthFiles = [];
+    this._monthFilter = null;
     const _mfChip = document.getElementById('monthFilterChip'); if (_mfChip) _mfChip.remove();
     const _mfPanel = document.getElementById('monthPickerPanel'); if (_mfPanel) _mfPanel.classList.remove('open');
     const _mfBtn = document.getElementById('monthPickerBtn'); if (_mfBtn) { _mfBtn.classList.remove('active'); _mfBtn.classList.remove('filtered'); }
@@ -2936,8 +2933,11 @@ const app = {
     this._favFilter = 'all';
     this._orientFilter = 'all';
     this._favStatusFilter = 'all';
-    if (this._monthFilter) this.setMonthFilter(null);
+    this._monthFilter = null;
+    const _mBtn = document.getElementById('monthPickerBtn');
+    if (_mBtn) _mBtn.classList.remove('filtered');
     this._applyFilters();
+    this._updateMonthFilterChip();
   },
 
   _updateFileCount(list) {
@@ -2990,14 +2990,23 @@ const app = {
   // Legacy alias
   filterFavorites(mode) { this.filterType(mode); },
 
+  // Unfiltered base list for the current view (single source for every filter)
+  _filterBaseFiles() {
+    if (this.currentFolderId === '__favorites__') return [...this.favData].reverse();
+    if (this.currentFolderId === '__random1000__') return [...this._r1000Cache];
+    return [...(this._folderFilesCache || this.originalFiles)];
+  },
+
   _applyFilters() {
-    let source;
-    if (this.currentFolderId === '__favorites__') {
-      source = [...this.favData].reverse();
-    } else if (this.currentFolderId === '__random1000__') {
-      source = [...this._r1000Cache];
-    } else {
-      source = [...(this._folderFilesCache || this.originalFiles)];
+    let source = this._filterBaseFiles();
+
+    // Month filter
+    if (this._monthFilter) {
+      source = source.filter(f => {
+        if (!f.mtime) return false;
+        const d = new Date(f.mtime);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === this._monthFilter;
+      });
     }
 
     // Type filter
@@ -3145,7 +3154,7 @@ const app = {
     this.shuffled = false;
     this.selectedSet.clear(); this._lastSelectedIdx = -1;
     this.originalFiles = [];
-    this._monthFilter = null; this._preMonthFiles = [];
+    this._monthFilter = null;
     const _mtrChip = document.getElementById('monthFilterChip'); if (_mtrChip) _mtrChip.remove();
     const _mtrPanel = document.getElementById('monthPickerPanel'); if (_mtrPanel) _mtrPanel.classList.remove('open');
     const _mtrBtn = document.getElementById('monthPickerBtn'); if (_mtrBtn) { _mtrBtn.classList.remove('active'); _mtrBtn.classList.remove('filtered'); }
@@ -3426,7 +3435,7 @@ const app = {
   },
 
   _buildMonthPicker(panel) {
-    const base = this._preMonthFiles.length ? this._preMonthFiles : this.currentFiles;
+    const base = this._filterBaseFiles();
     const monthMap = new Map();
     for (const f of base) {
       if (!f.mtime) continue;
@@ -3457,31 +3466,14 @@ const app = {
   },
 
   setMonthFilter(monthKey) {
-    const base = this._preMonthFiles.length ? this._preMonthFiles : [...this.currentFiles];
     this._monthFilter = monthKey || null;
     // Close picker
     const panel = document.getElementById('monthPickerPanel');
     const btn = document.getElementById('monthPickerBtn');
     if (panel) panel.classList.remove('open');
     if (btn) { btn.classList.remove('active'); btn.classList.toggle('filtered', !!this._monthFilter); }
-
-    if (this._monthFilter) {
-      this._preMonthFiles = base;
-      this.originalFiles = base;
-      this.currentFiles = base.filter(f => {
-        if (!f.mtime) return false;
-        const d = new Date(f.mtime);
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === this._monthFilter;
-      });
-    } else {
-      this.currentFiles = base;
-      this.originalFiles = base;
-      this._preMonthFiles = [];
-    }
-    this._updateFileCount();
-    this.renderGallery();
+    this._applyFilters();
     this._updateMonthFilterChip();
-    this._updateFilterIndicator();
   },
 
   _updateMonthFilterChip() {
