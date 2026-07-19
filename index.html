@@ -575,10 +575,12 @@ const app = {
   hiddenSet: new Set(),
   hiddenData: [],  // full entries with folder info and timestamp
   hiddenFileId: null,
+  _hiddenCloudLoaded: false,
   // Favorites
   favSet: new Set(),
   favData: [],  // full entries with folder info
   favFileId: null,
+  _favCloudLoaded: false,
   // View mode (1, 2, or 3 images at once)
   viewCount: 1,
   // Background preloader
@@ -3076,12 +3078,19 @@ const app = {
         }
         console.log(`숨김 파일 ${this.hiddenSet.size}개 로드됨`);
       }
+      this._hiddenCloudLoaded = true;
     } catch (e) {
       console.error('Hidden list load failed:', e);
     }
   },
 
   async saveHidden() {
+    // Cloud-loaded guard: never overwrite cloud data unless this session loaded it successfully
+    if (!this._hiddenCloudLoaded) {
+      console.error('saveHidden blocked: hidden list was not loaded from cloud this session');
+      this.toast('숨김 목록 동기화 실패 상태 — 저장이 차단됐어요. 새로고침 후 다시 시도하세요');
+      return;
+    }
     try {
       const enc = await Crypto.encryptJSON(this.key, this.hiddenData);
       if (this.hiddenFileId) {
@@ -3271,10 +3280,17 @@ const app = {
         this.favSet = new Set(this.favData.map(f => f.origDriveId));
         console.log(`즐겨찾기 ${this.favSet.size}개 로드됨`);
       }
+      this._favCloudLoaded = true;
     } catch (e) { console.error('Favorites load failed:', e); }
   },
 
   async saveFavorites() {
+    // Cloud-loaded guard: never overwrite cloud data unless this session loaded it successfully
+    if (!this._favCloudLoaded) {
+      console.error('saveFavorites blocked: favorites were not loaded from cloud this session');
+      this.toast('즐겨찾기 동기화 실패 상태 — 저장이 차단됐어요. 새로고침 후 다시 시도하세요');
+      return;
+    }
     try {
       const enc = await Crypto.encryptJSON(this.key, this.favData);
       if (this.favFileId) { await Drive.update(this.favFileId, enc); }
