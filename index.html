@@ -76,7 +76,7 @@ input { font-family: var(--font); outline: none; }
 .toolbar-floating { position: fixed; top: calc(var(--header-h) + 12px); left: 24px; right: 24px; z-index: 50; transform: translateY(-140%); opacity: 0; pointer-events: none; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease; }
 .toolbar-floating.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
 .toolbar-floating .toolbar { margin: 0; box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6); background: rgba(28, 31, 35, 0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-.toolbar .file-count { font-family: var(--mono); font-size: 11px; color: var(--text2); font-weight: 500; letter-spacing: 0.1em; }
+.toolbar .file-count { font-family: var(--mono); font-size: 11px; color: var(--text2); font-weight: 500; letter-spacing: 0.02em; margin-left: 2px; }
 .toolbar .spacer { flex: 1; }
 .grid-slider { display: flex; align-items: center; gap: 10px; background: var(--base); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); }
 .grid-slider label { font-family: var(--mono); font-size: 11px; color: var(--text2); font-weight: 500; }
@@ -356,7 +356,6 @@ input { font-family: var(--font); outline: none; }
     </div>
     <div class="content-scroll" id="contentScroll">
       <div class="toolbar" id="toolbar" style="display:none">
-        <span class="file-count" id="fileCount"></span>
         <button class="shuffle-btn" onclick="app.sortFiles('shuffle')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> 셔플</button>
         <button class="sort-btn sort-name" id="sortNameBtn" onclick="app.toggleNameSort()"><span class="sort-icon">A</span> 이름 <span class="sort-arrow" id="sortNameArrow">↑</span></button>
         <button class="sort-btn sort-size" id="sortSizeBtn" onclick="app.toggleSizeSort()"><svg class="sort-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> 크기 <span class="sort-arrow" id="sortSizeArrow">↑</span></button>
@@ -365,6 +364,7 @@ input { font-family: var(--font); outline: none; }
           <button class="month-picker-btn" id="monthPickerBtn" onclick="app.toggleMonthPicker()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>연/월</button>
           <div class="month-picker-panel" id="monthPickerPanel"></div>
         </div>
+        <span class="file-count" id="fileCount"></span>
         <div class="spacer"></div>
       </div>
       <div id="contentArea"></div>
@@ -3675,7 +3675,9 @@ const app = {
     if (!chip) {
       chip = document.createElement('div');
       chip.className = 'month-filter-chip';
-      bar.insertBefore(chip, bar.firstChild);
+      // Sit right after the 연/월 button so nothing to its left changes width while selecting
+      const _mw = bar.querySelector('.month-picker-wrap');
+      if (_mw) _mw.after(chip); else bar.insertBefore(chip, bar.firstChild);
     }
     chip.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${this._monthChipLabel()}<span onclick="app.clearMonthFilter()" style="cursor:pointer;opacity:0.65;font-size:15px;line-height:1;padding:0 2px;" title="필터 해제">✕</span>`;
     return chip;
