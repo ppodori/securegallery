@@ -275,6 +275,7 @@ img.tfade.in { opacity: 1; }
 .lb-nav.next { right: 24px; }
 .lightbox:fullscreen .lb-nav { opacity: 0; pointer-events: none; }
 .lightbox:fullscreen .lb-nav.edge-hover { opacity: 1; pointer-events: auto; }
+.lightbox:fullscreen.cursor-idle, .lightbox:fullscreen.cursor-idle * { cursor: none !important; }
 .lightbox.immersive .lb-top, .lightbox.immersive .lb-bottom { position: absolute; left: 0; right: 0; z-index: 25; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
 .lightbox.immersive .lb-top { top: 0; background: linear-gradient(rgba(10,11,13,0.85), transparent); }
 .lightbox.immersive .lb-bottom { bottom: 0; background: linear-gradient(transparent, rgba(10,11,13,0.85)); }
@@ -4326,6 +4327,34 @@ document.getElementById('lightbox')?.addEventListener('mousemove', e => {
   if (bot) bot.classList.toggle('edge-show', e.clientY > h - 50 || ssPanelOpen);
 });
 
+// ===== FULLSCREEN: hide the mouse cursor after 1s without movement =====
+(() => {
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+  let timer = null, lastX = -1, lastY = -1, overChrome = false;
+  const show = () => { lb.classList.remove('cursor-idle'); clearTimeout(timer); timer = null; };
+  const arm = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const ssOpen = document.getElementById('ssPanel')?.classList.contains('open');
+      // keep it visible while resting on the top/bottom bars or the slideshow panel
+      if (document.fullscreenElement === lb && !overChrome && !ssOpen) lb.classList.add('cursor-idle');
+    }, 1000);
+  };
+  lb.addEventListener('mousemove', e => {
+    if (document.fullscreenElement !== lb) return;
+    // same zones that reveal the bars (top/bottom 50px), plus the slideshow panel
+    overChrome = e.clientY < 50 || e.clientY > window.innerHeight - 50 || !!e.target.closest('.ss-panel');
+    // Chromium fires mousemove when content changes under a still cursor (e.g. slideshow): ignore unless it really moved
+    if (e.clientX === lastX && e.clientY === lastY) return;
+    lastX = e.clientX; lastY = e.clientY;
+    show(); arm();
+  });
+  lb.addEventListener('mousedown', () => { if (document.fullscreenElement === lb) { show(); arm(); } });
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement === lb) arm(); else show();
+  });
+})();
 
 // Close month picker when clicking outside
 document.addEventListener('click', e => {
