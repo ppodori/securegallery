@@ -3842,7 +3842,12 @@ const app = {
   },
 
   // ===== FOLDER COVERS =====
-  // Per-folder {mt: index modifiedTime, n: visible count, r: newest 4 [{t: thumbDriveId, v: isVideo, m: mtime}]}
+  // Per folder (localStorage 'sg_fmeta2'):
+  //   { mt: index modifiedTime, n: total files in the index (hidden included),
+  //     c: up to 10 cover candidates [{o: origDriveId, t: thumbDriveId, v: isVideo}] in rotation order }
+  // Photo folders: 10 random picks. Video folders (half or more videos): 5 newest + 5 random.
+  // A folder's candidates are re-picked whenever its index changes (e.g. new uploads).
+  // The cover rotates once a day through the candidates; hidden files are skipped and subtracted from the count.
   _folderMeta: null,
   _fmetaBusy: false,
   _fmetaLast: 0,
@@ -3850,10 +3855,28 @@ const app = {
   _coverActive: 0,
   _fmetaLoad() {
     if (this._folderMeta) return;
-    try { this._folderMeta = JSON.parse(localStorage.getItem('sg_fmeta') || '{}') || {}; } catch { this._folderMeta = {}; }
+    try { localStorage.removeItem('sg_fmeta'); } catch {}  // old format (newest-4), superseded
+    try { this._folderMeta = JSON.parse(localStorage.getItem('sg_fmeta2') || '{}') || {}; } catch { this._folderMeta = {}; }
   },
   _fmetaSave() {
-    try { localStorage.setItem('sg_fmeta', JSON.stringify(this._folderMeta)); } catch {}
+    try { localStorage.setItem('sg_fmeta2', JSON.stringify(this._folderMeta)); } catch {}
+  },
+  _pickCoverCandidates(files) {
+    const pool = files.filter(f => f.thumbDriveId && !this.hiddenSet.has(f.origDriveId));
+    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const isVideoFolder = pool.length > 0 && pool.filter(f => f.type?.startsWith('video/')).length * 2 >= pool.length;
+    let picks;
+    if (isVideoFolder) {
+      const byNew = [...pool].sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+      const newest = byNew.slice(0, 5);
+      const randoms = shuffle(byNew.slice(5)).slice(0, 5);
+      // interleave so new uploads come up every other day
+      picks = [];
+      for (let k = 0; k < 5; k++) { if (newest[k]) picks.push(newest[k]); if (randoms[k]) picks.push(randoms[k]); }
+    } else {
+      picks = shuffle([...pool]).slice(0, 10);
+    }
+    return picks.map(f => ({ o: f.origDriveId, t: f.thumbDriveId, v: f.type?.startsWith('video/') ? 1 : 0 }));
   },
   async _refreshFolderMeta() {
     if (this._fmetaBusy || !this.key) return;
@@ -3869,12 +3892,7 @@ const app = {
           const x = stale[i++];
           try {
             const files = await Crypto.decryptJSON(this.key, await Drive.download(x.id));
-            const vis = files.filter(f => !this.hiddenSet.has(f.origDriveId));
-            vis.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
-            this._folderMeta[x.parents[0]] = {
-              mt: x.modifiedTime, n: vis.length,
-              r: vis.filter(f => f.thumbDriveId).slice(0, 4).map(f => ({ t: f.thumbDriveId, v: f.type?.startsWith('video/') ? 1 : 0, m: f.mtime || 0 }))
-            };
+            this._folderMeta[x.parents[0]] = { mt: x.modifiedTime, n: files.length, c: this._pickCoverCandidates(files) };
             changed++;
             this._paintFolderCovers(x.parents[0]);
           } catch {}
@@ -3894,23 +3912,51 @@ const app = {
       this._thumbUrl(job.t).then(u => { job.img.src = u; }).catch(() => {}).finally(() => { this._coverActive--; this._coverPump(); });
     }
   },
+  // Local day number (changes at local midnight)
+  _dayNumber() {
+    const d = new Date();
+    return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  },
+  // Stable per-folder offset so folders don't all advance in lockstep
+  _folderOffset(id) {
+    let h = 0;
+    for (let k = 0; k < id.length; k++) h = (h * 31 + id.charCodeAt(k)) >>> 0;
+    return h;
+  },
+  // Today's cover for a folder (step = 0), or a neighbouring candidate (step > 0); null if none visible
+  _coverFor(id, step = 0) {
+    const m = this._folderMeta[id];
+    if (!m || !m.c) return null;
+    const live = m.c.filter(c => !this.hiddenSet.has(c.o));
+    if (!live.length) {
+      // every candidate was hidden: re-read this folder's index on the next refresh
+      if (m.mt) { m.mt = null; this._fmetaLast = 0; this._fmetaSave(); }
+      return null;
+    }
+    return live[(this._dayNumber() + this._folderOffset(id) + step) % live.length];
+  },
   _paintFolderCovers(onlyId) {
     this._fmetaLoad();
+    // hidden files per folder, for the counts
+    const hiddenBy = {};
+    for (const h of this.hiddenData) if (h._folderId) hiddenBy[h._folderId] = (hiddenBy[h._folderId] || 0) + 1;
     document.querySelectorAll('.folder-card[data-fid]').forEach(card => {
       const ids = card.dataset.fid.split(',');
       if (onlyId && !ids.includes(onlyId)) return;
-      const metas = ids.map(id => this._folderMeta[id]).filter(Boolean);
-      if (!metas.length) return;
+      const known = ids.filter(id => this._folderMeta[id]?.c);
+      if (!known.length) return;
       const cnt = card.querySelector('.fc-count');
-      if (cnt) cnt.textContent = `${metas.reduce((s, m) => s + (m.n || 0), 0).toLocaleString()}개`;
+      if (cnt) cnt.textContent = `${known.reduce((s, id) => s + Math.max(0, (this._folderMeta[id].n || 0) - (hiddenBy[id] || 0)), 0).toLocaleString()}개`;
       let picks;
       if (ids.length > 1) {
-        // Mosaic: one from each folder first, then the newest of the rest
-        const firsts = metas.map(m => m.r[0]).filter(Boolean);
-        const rest = metas.flatMap(m => m.r.slice(1)).sort((a, b) => b.m - a.m);
-        picks = [...firsts, ...rest].slice(0, 4);
+        // Mosaic: today's cover from each folder, then one more from the first folder
+        picks = known.map(id => this._coverFor(id)).filter(Boolean);
+        const extra = this._coverFor(known[0], 1);
+        if (extra && !picks.some(p => p.t === extra.t)) picks.push(extra);
+        picks = picks.slice(0, 4);
       } else {
-        picks = metas[0].r.slice(0, 1);
+        const p = this._coverFor(known[0]);
+        picks = p ? [p] : [];
       }
       if (!picks.length) return;
       const sig = picks.map(p => p.t).join('|');
