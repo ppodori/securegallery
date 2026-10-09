@@ -245,10 +245,10 @@ img.tfade.in { opacity: 1; }
 #lbContent.triple .lb-media-wrap { max-width: 55%; }
 .lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(10, 11, 13, 0.97); flex-direction: column; overflow: hidden; }
 /* Ambient: blurred copy of the current photo behind the lightbox (photos only) */
-.lb-ambient { position: absolute; inset: -10%; background-size: cover; background-position: center; filter: blur(56px) saturate(1.35) brightness(0.62); opacity: 0; transition: opacity 0.6s ease; pointer-events: none; z-index: 0; transform: translateZ(0); }
+.lb-ambient { position: absolute; left: 33.33%; top: 33.33%; width: 33.34%; height: 33.34%; background-size: cover; background-position: center; filter: blur(16px) saturate(1.35) brightness(0.62); transform: scale(3.6); transform-origin: 50% 50%; opacity: 0; transition: opacity 0.6s ease; pointer-events: none; z-index: 0; }
 .lb-ambient.on { opacity: 0.8; }
 /* Zoom ghost used for the thumbnail <-> lightbox transition */
-.zoom-ghost { position: fixed; z-index: 1001; object-fit: cover; border-radius: 6px; pointer-events: none; will-change: left, top, width, height; transition: left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 0.3s ease, opacity 0.18s ease; }
+.zoom-ghost { position: fixed; z-index: 1001; object-fit: fill; pointer-events: none; transform-origin: 50% 50%; will-change: transform, clip-path; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), clip-path 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s ease; }
 @media (prefers-reduced-motion: reduce) {
   .loading-placeholder, .folder-card .fc-cover { animation: none !important; }
   .zoom-ghost, .lb-ambient, img.tfade { transition: none !important; }
@@ -3948,10 +3948,26 @@ const app = {
     const w = nw * s, h = nh * s;
     return { left: c.left + (c.width - w) / 2, top: c.top + (c.height - h) / 2, width: w, height: h };
   },
-  _placeGhost(z, r, radius) {
+  _placeGhost(z, r) {
     z.style.left = r.left + 'px'; z.style.top = r.top + 'px';
     z.style.width = r.width + 'px'; z.style.height = r.height + 'px';
-    if (radius != null) z.style.borderRadius = radius;
+  },
+  // Transform + clip that make an element laid out at rect T look like the (cover-cropped) tile at rect S
+  _ghostAt(T, S, radiusPx) {
+    const a = S.width / S.height;
+    let cw = T.width, ch = T.height;
+    if (T.width / T.height > a) cw = T.height * a; else ch = T.width / a;
+    const s = S.width / cw;
+    const dx = (S.left + S.width / 2) - (T.left + T.width / 2);
+    const dy = (S.top + S.height / 2) - (T.top + T.height / 2);
+    return {
+      transform: `translate(${dx}px, ${dy}px) scale(${s})`,
+      clip: `inset(${(T.height - ch) / 2}px ${(T.width - cw) / 2}px round ${radiusPx / s}px)`
+    };
+  },
+  _ghostSet(z, st) {
+    if (st) { z.style.transform = st.transform; z.style.clipPath = st.clip; }
+    else { z.style.transform = 'none'; z.style.clipPath = 'inset(0px round 0px)'; }
   },
   _zoomOpen(i) {
     if (this._reducedMotion() || this.viewCount > 1) return;
@@ -3961,15 +3977,18 @@ const app = {
     const r = img.getBoundingClientRect();
     if (r.width < 8 || r.bottom < 0 || r.top > window.innerHeight) return;
     this._endZoom(true);
+    const target = this._fitRect(img.naturalWidth, img.naturalHeight);
     const z = document.createElement('img');
     z.className = 'zoom-ghost'; z.src = img.src; z.alt = '';
-    this._placeGhost(z, r, '6px');
+    this._placeGhost(z, target);                      // laid out once, at the final size
+    z.style.transition = 'none';
+    this._ghostSet(z, this._ghostAt(target, r, 6));   // start: looks like the tile
     document.body.appendChild(z);
     this._zoomGhost = z;
     this._zoomStart = performance.now();
-    const target = this._fitRect(img.naturalWidth, img.naturalHeight);
-    z.getBoundingClientRect();  // commit the start position before animating
-    requestAnimationFrame(() => this._placeGhost(z, target, '0px'));
+    z.getBoundingClientRect();                        // commit the start state
+    z.style.transition = '';
+    requestAnimationFrame(() => this._ghostSet(z, null));
     clearTimeout(this._zoomTimer);
     this._zoomTimer = setTimeout(() => this._endZoom(), 4000);  // safety net
   },
@@ -4003,8 +4022,11 @@ const app = {
     this._endZoom(true);
     const z = document.createElement('img');
     z.className = 'zoom-ghost'; z.src = turl; z.alt = '';
-    this._placeGhost(z, r, '0px');
+    this._placeGhost(z, r);
+    z.style.transition = 'none';
+    this._ghostSet(z, null);
     document.body.appendChild(z);
+    z._rect = r;
     return z;
   },
   _zoomBack(z, idx) {
@@ -4016,7 +4038,9 @@ const app = {
       if (!item || item.offsetParent === null) { done(); return; }
       const r = item.getBoundingClientRect();
       if (r.bottom < 0 || r.top > window.innerHeight) { done(); return; }
-      this._placeGhost(z, r, '6px');
+      z.getBoundingClientRect();
+      z.style.transition = '';
+      this._ghostSet(z, this._ghostAt(z._rect, r, 6));
       setTimeout(() => z.remove(), 340);
     }));
   },
@@ -4035,9 +4059,17 @@ const app = {
   },
   // Called once the new lightbox content is actually visible
   _lbShown(f) {
+    const hadGhost = !!this._zoomGhost;
     this._endZoom();
-    if (f && !f.type?.startsWith('video/')) this._setAmbient(this.preloadCache.get(f.origDriveId) || this.thumbCache.get(f.thumbDriveId));
-    else this._setAmbient(null);
+    if (!f || f.type?.startsWith('video/')) { this._setAmbient(null); return; }
+    // Reuse the photo already decoded for display; start once the zoom has finished so the two don't compete
+    const url = this.preloadCache.get(f.origDriveId) || this.thumbCache.get(f.thumbDriveId);
+    const ver = this._showVer;
+    const wait = hadGhost ? Math.max(0, 320 - (performance.now() - this._zoomStart)) : 0;
+    setTimeout(() => {
+      if (ver !== this._showVer || !document.getElementById('lightbox').classList.contains('active')) return;
+      this._setAmbient(url);
+    }, wait);
   },
 
   // ===== THEME (system / light / dark) =====
