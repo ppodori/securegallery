@@ -613,6 +613,12 @@ const Drive = {
     const files = (await r.json()).files || [];
     return files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
   },
+  async findIndex(parentId) {
+    const q = `name='_index.enc' and '${parentId}' in parents and trashed=false`;
+    const r = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,modifiedTime)&pageSize=1`);
+    if (!r.ok) throw new Error(`Drive ${r.status}`);
+    return ((await r.json()).files || [])[0] || null;
+  },
   async findFile(name, parentId) {
     const q = `name='${name}' and '${parentId}' in parents and trashed=false`;
     const r = await this._fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)&pageSize=1`);
@@ -1068,8 +1074,10 @@ const app = {
     }
 
     const area = document.getElementById('contentArea');
-    area.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
-    document.getElementById('toolbar').style.display = 'none';
+    if (!(this.treeCache[folderId] && this._idxCache.has(folderId))) {  // cached folders render immediately
+      area.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+      document.getElementById('toolbar').style.display = 'none';
+    }
 
     try {
       // Subfolders
@@ -1080,24 +1088,15 @@ const app = {
         ? (this.treeCache[folderId] || []).filter(f => f.name !== 'index' && f.name !== 'thumbs' && f.name !== 'files')
         : (this.treeCache[folderId] || []);
 
-      // Index
-      const indexId = await Drive.findFile('_index.enc', folderId);
+      // Index (cached after the first visit; newest first)
       let files = [];
-      if (indexId) {
-        try {
-          const allFiles = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
-          files = allFiles.filter(f => !this.hiddenSet.has(f.origDriveId));
-          // Auto-sort by date (newest first)
-          files.sort((a, b) => {
-            const at = a.mtime || 0, bt = b.mtime || 0;
-            if (!at && !bt) return 0;
-            if (!at) return 1;
-            if (!bt) return -1;
-            return bt - at;
-          });
-          this.currentFiles = files;
-        } catch (e) { console.error(e); this.toast('인덱스 복호화 실패'); }
-      }
+      try {
+        const visible = raw => this._sortByDate(raw.filter(f => !this.hiddenSet.has(f.origDriveId)));
+        const allFiles = await this._getIndex(folderId,
+          folderId === this.rootDriveId ? null : raw => this._refreshViewFiles(folderId, visible(raw)));
+        files = visible(allFiles);
+        this.currentFiles = files;
+      } catch (e) { console.error(e); this.toast('인덱스를 불러오지 못했습니다'); }
 
       this.renderView(subfolders, files);
     } catch (e) {
@@ -2470,30 +2469,26 @@ const app = {
 
     const area = document.getElementById('contentArea');
     const toolbar = document.getElementById('toolbar');
-    toolbar.style.display = 'none';
-    area.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`;
+    const _m = this._mergedIds;
+    if (!(_m && [_m.lsId, _m.ptId, _m.lfId].every(id => this._idxCache.has(id)))) {  // cached: render immediately
+      toolbar.style.display = 'none';
+      area.innerHTML = `<div class="empty-state"><div class="spinner"></div></div>`;
+    }
 
     try {
       const ids = await this._resolveMergedIds();
       if (!ids) { area.innerHTML = `<div class="empty-state">1.Landscape / 2.Portrait / 3.Longform 폴더를 찾을 수 없습니다.</div>`; return; }
-      const parts = await Promise.all([
+      const specs = [
         { fid: ids.lsId, fname: '1.Landscape' },
         { fid: ids.ptId, fname: '2.Portrait' },
         { fid: ids.lfId, fname: '3.Longform' }
-      ].map(async ({ fid, fname }) => {
-        const indexId = await Drive.findFile('_index.enc', fid);
-        if (!indexId) return [];
-        const files = await Crypto.decryptJSON(this.key, await Drive.download(indexId));
-        return files.filter(f => !this.hiddenSet.has(f.origDriveId)).map(f => ({ ...f, _folderId: fid, _folderName: fname }));
-      }));
-      const merged = [...parts[0], ...parts[1], ...parts[2]];
-      merged.sort((a, b) => {
-        const at = a.mtime || 0, bt = b.mtime || 0;
-        if (!at && !bt) return 0;
-        if (!at) return 1;
-        if (!bt) return -1;
-        return bt - at;
-      });
+      ];
+      const onChanged = () => {  // one of the three changed in the background: rebuild once
+        clearTimeout(this._mwRefreshT);
+        this._mwRefreshT = setTimeout(() => this._refreshViewFiles('__mergedwide__', this._buildMerged(specs)), 50);
+      };
+      const lists = await Promise.all(specs.map(s => this._getIndex(s.fid, onChanged)));
+      const merged = this._buildMerged(specs, lists);
       this.currentFiles = merged;
       this.originalFiles = [...merged];
       this._folderFilesCache = [...merged];
@@ -3839,6 +3834,63 @@ const app = {
     if (chip) chip.id = 'monthFilterChip';
     // Keep the floating toolbar clone in sync while its picker is open
     this._renderMonthChip(document.getElementById('toolbarFloating')?.firstElementChild);
+  },
+
+  // ===== FOLDER INDEX CACHE (instant back / forward) =====
+  // folderId -> { id, mt, files }: the raw decrypted index (hidden files are filtered when rendering).
+  // Keeps the 10 most recently opened folders for this page session.
+  _idxCache: new Map(),
+  _idxPut(fid, entry) {
+    this._idxCache.delete(fid);
+    this._idxCache.set(fid, entry);
+    while (this._idxCache.size > 10) this._idxCache.delete(this._idxCache.keys().next().value);
+  },
+  async _fetchIndex(fid) {
+    const meta = await Drive.findIndex(fid);
+    const files = meta ? await Crypto.decryptJSON(this.key, await Drive.download(meta.id)) : [];
+    const entry = { id: meta?.id || null, mt: meta?.modifiedTime || null, files };
+    this._idxPut(fid, entry);
+    return entry;
+  },
+  // Cached index right away (then a tiny background check for changes), or a normal load the first time.
+  async _getIndex(fid, onChanged) {
+    const hit = this._idxCache.get(fid);
+    if (!hit) return (await this._fetchIndex(fid)).files;
+    this._idxPut(fid, hit);  // most recently used
+    (async () => {
+      try {
+        const meta = await Drive.findIndex(fid);
+        if ((meta?.id || null) === hit.id && (meta?.modifiedTime || null) === hit.mt) return;
+        const entry = await this._fetchIndex(fid);
+        if (onChanged) onChanged(entry.files);
+      } catch {}
+    })();
+    return hit.files;
+  },
+  _sortByDate(list) {
+    return list.sort((a, b) => {
+      const at = a.mtime || 0, bt = b.mtime || 0;
+      if (!at && !bt) return 0;
+      if (!at) return 1;
+      if (!bt) return -1;
+      return bt - at;
+    });
+  },
+  // Apply a fresher file list to the open view, only when it won't disturb the user
+  _refreshViewFiles(viewId, base) {
+    if (this.currentFolderId !== viewId || !document.getElementById('galleryGrid')) return;
+    if (document.getElementById('lightbox').classList.contains('active') || this.selectedSet.size) return;
+    const sc = document.getElementById('contentScroll');
+    if (sc && sc.scrollTop > 300) return;  // scrolled down: leave it, the next visit shows the update
+    this._folderFilesCache = [...base];
+    this._applyFilters();
+  },
+  _buildMerged(specs, lists) {
+    const parts = specs.map(({ fid, fname }, k) =>
+      ((lists ? lists[k] : this._idxCache.get(fid)?.files) || [])
+        .filter(f => !this.hiddenSet.has(f.origDriveId))
+        .map(f => ({ ...f, _folderId: fid, _folderName: fname })));
+    return this._sortByDate([].concat(...parts));
   },
 
   // ===== FOLDER COVERS =====
