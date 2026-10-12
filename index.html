@@ -897,7 +897,7 @@ const app = {
         else localStorage.removeItem('sg_pw_keep');
       } catch {}
       await Promise.all([this.loadHidden(), this.loadFavorites(), this.buildTree(this.rootDriveId)]);
-      this._repairFavMtime(); // background, non-blocking
+      this._repairFavMtime().then(() => this._repairFavDims()).catch(() => {}); // background, non-blocking
       this.navStack = [];
       this.navTo(this.rootDriveId, CONFIG.ROOT_NAME);
     } catch (e) {
@@ -3203,11 +3203,13 @@ const app = {
   },
 
   _isPortrait(f) {
+    if (f.w > 0 && f.h > 0) return f.h >= f.w;   // real pixels when the index has them (square counts as portrait)
     const n = f._folderName || '';
     return /^\d+$/.test(n) || n.startsWith('Soft_') || n === '2.Portrait';
   },
 
   _isLandscape(f) {
+    if (f.w > 0 && f.h > 0) return f.w > f.h;
     const n = f._folderName || '';
     return /^[Ww]ide_/.test(n) || n === '1.Landscape' || n === '3.Longform';
   },
@@ -3630,6 +3632,36 @@ const app = {
     if (repaired > 0) {
       await this.saveFavorites();
       console.log(`즐겨찾기 날짜 복구 완료: ${repaired}개`);
+    }
+  },
+
+  // Copy w/h into favorites saved before the index had sizes.
+  // Each folder is re-read only when its index changed since the last check (e.g. after the size backfill).
+  async _repairFavDims() {
+    const missing = this.favData.filter(f => !(f.w && f.h) && f._folderId && !f._folderId.startsWith('__'));
+    if (!missing.length) return;
+    let seen = {};
+    try { seen = JSON.parse(localStorage.getItem('sg_favdims_seen') || '{}') || {}; } catch {}
+    const byFolder = {};
+    for (const f of missing) (byFolder[f._folderId] ||= []).push(f);
+    let filled = 0;
+    for (const [fid, items] of Object.entries(byFolder)) {
+      try {
+        const meta = await Drive.findIndex(fid);
+        if (!meta || seen[fid] === meta.modifiedTime) continue;
+        const files = await Crypto.decryptJSON(this.key, await Drive.download(meta.id));
+        const lookup = new Map(files.map(f => [f.origDriveId, f]));
+        for (const fav of items) {
+          const o = lookup.get(fav.origDriveId);
+          if (o?.w && o?.h) { fav.w = o.w; fav.h = o.h; filled++; }
+        }
+        seen[fid] = meta.modifiedTime;
+      } catch (e) { console.warn(`즐겨찾기 크기 보정: 폴더 ${fid} 실패`, e); }
+    }
+    try { localStorage.setItem('sg_favdims_seen', JSON.stringify(seen)); } catch {}
+    if (filled > 0) {
+      await this.saveFavorites();
+      console.log(`즐겨찾기 크기 보정: ${filled}개`);
     }
   },
 
