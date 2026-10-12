@@ -844,9 +844,40 @@ const app = {
   // Month filter (multi-select: Set of 'YYYY-MM')
   _monthFilters: new Set(),
 
+  _viewMemo: {},
+  _viewOrder: null,
+  // Back/forward into Random 1000 / Favorites: re-apply the filters and order it was left with. Returns false if nothing to restore.
+  _restoreViewMemo(vk) {
+    const v = this._viewMemo[vk];
+    if (!this._skipHistory || !v || (vk === 'random1000' && v.cache !== this._r1000Cache)) return false;
+    this._favFilter = v.type; this._orientFilter = v.orient; this._favStatusFilter = v.favst;
+    v.months.forEach(m => this._monthFilters.add(m));
+    document.querySelectorAll('.month-picker-btn').forEach(b => b.classList.toggle('filtered', this._monthFilters.size > 0));
+    this._updateMonthFilterChip();
+    const shuffle = v.sort === 'shuffle';
+    this._viewOrder = new Map(v.order.map((id, i) => [id, i]));
+    this._currentSort = shuffle ? '__keep__' : v.sort;   // shuffle: keep the saved order; other sorts are re-applied (new items land in place)
+    this._quietSort = true;
+    try { this._applyFilters(); } finally { this._viewOrder = null; this._quietSort = false; }
+    if (shuffle) {
+      this._currentSort = 'shuffle'; this.shuffled = true;
+      document.querySelectorAll('#sortNameBtn, #sortSizeBtn, #sortDateBtn, #sortAddedBtn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.shuffle-btn').forEach(b => b.classList.add('active'));
+    }
+    return true;
+  },
+
   _saveScrollToHistory() {
     const scroll = document.getElementById('contentScroll');
     if (!scroll || !history.state) return;
+    // Leaving Random 1000 / Favorites (into a folder / lightbox): remember filters and order for the way back
+    const vk = history.state.view;
+    if ((vk === 'random1000' && this.currentFolderId === '__random1000__') || (vk === 'favorites' && this.currentFolderId === '__favorites__')) {
+      this._viewMemo[vk] = {
+        cache: vk === 'random1000' ? this._r1000Cache : null, type: this._favFilter, orient: this._orientFilter, favst: this._favStatusFilter,
+        months: [...this._monthFilters], sort: this._currentSort, order: this.currentFiles.map(f => f.origDriveId)
+      };
+    }
     const grid = document.getElementById('galleryGrid');
     if (grid) {
       // Gallery view: save item index
@@ -2575,7 +2606,7 @@ const app = {
     }
 
     area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
-    this.renderGallery();
+    if (!this._restoreViewMemo('random1000')) this.renderGallery();
     this._updateFilterIndicator();
   },
 
@@ -2979,7 +3010,7 @@ const app = {
     if (addedArrow) addedArrow.textContent = this._currentSort === 'added_asc' ? '↑' : '↓';
 
     const labels = { name_asc: '이름 ↑', name_desc: '이름 ↓', size_asc: '크기 ↑', size_desc: '크기 ↓', date_asc: '날짜 ↑ (오래된순)', date_desc: '날짜 ↓ (최신순)', shuffle: '🔀 셔플', added_desc: '추가순 ↓ (최신)', added_asc: '추가순 ↑ (오래된순)' };
-    this.toast(`정렬: ${labels[mode]}`);
+    if (!this._quietSort) this.toast(`정렬: ${labels[mode]}`);
   },
 
   // ===== MULTI-SELECT =====
@@ -3040,6 +3071,7 @@ const app = {
       this.favData.push({
         origDriveId: f.origDriveId, thumbDriveId: f.thumbDriveId,
         name: f.name, type: f.type, size: f.size, mtime: f.mtime,
+        ...(f.w && f.h ? { w: f.w, h: f.h } : {}),
         _folderId: f._folderId || this.currentFolderId,
         _folderName: f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : '')
       });
@@ -3167,7 +3199,7 @@ const app = {
     }
 
     area.innerHTML = `<div class="gallery-grid" id="galleryGrid" style="grid-template-columns:repeat(auto-fill,minmax(${this.gridSize}px,1fr))"></div>`;
-    this.renderGallery();
+    if (!this._restoreViewMemo('favorites')) this.renderGallery();
     this._updateFilterIndicator();
   },
 
@@ -3293,8 +3325,13 @@ const app = {
 
   // Unfiltered base list for the current view (single source for every filter)
   _filterBaseFiles() {
-    if (this.currentFolderId === '__favorites__') return [...this.favData].reverse();
-    if (this.currentFolderId === '__random1000__') return [...this._r1000Cache];
+    const byOrder = list => {
+      if (!this._viewOrder) return list;
+      const rank = this._viewOrder, end = rank.size;   // items not seen before go last
+      return list.sort((a, b) => (rank.get(a.origDriveId) ?? end) - (rank.get(b.origDriveId) ?? end));
+    };
+    if (this.currentFolderId === '__favorites__') return byOrder([...this.favData].reverse());
+    if (this.currentFolderId === '__random1000__') return byOrder([...this._r1000Cache]);
     return [...(this._folderFilesCache || this.originalFiles)];
   },
 
@@ -3355,7 +3392,7 @@ const app = {
     const favStBtns = document.querySelectorAll('#favFilterDiv [data-filter="favst"]');
     if (favStBtns[favStIdx[this._favStatusFilter]]) favStBtns[favStIdx[this._favStatusFilter]].classList.add('active');
 
-    if (this._currentSort !== 'date_desc') this.sortFiles(this._currentSort);
+    if (this._currentSort !== 'date_desc' || this._quietSort) this.sortFiles(this._currentSort);
     else this.renderGallery();
     this._updateFilterIndicator();
   },
@@ -3640,25 +3677,32 @@ const app = {
   async _repairFavDims() {
     const missing = this.favData.filter(f => !(f.w && f.h) && f._folderId && !f._folderId.startsWith('__'));
     if (!missing.length) return;
+    // seen: favorite id -> folder-index modifiedTime when it was last looked up without finding a size.
+    // A folder is re-read only if it changed since, or holds a favorite not looked up yet.
     let seen = {};
-    try { seen = JSON.parse(localStorage.getItem('sg_favdims_seen') || '{}') || {}; } catch {}
+    try { seen = JSON.parse(localStorage.getItem('sg_favdims_seen2') || '{}') || {}; } catch {}
+    const nextSeen = {};
     const byFolder = {};
     for (const f of missing) (byFolder[f._folderId] ||= []).push(f);
     let filled = 0;
     for (const [fid, items] of Object.entries(byFolder)) {
       try {
         const meta = await Drive.findIndex(fid);
-        if (!meta || seen[fid] === meta.modifiedTime) continue;
+        if (!meta) continue;
+        if (items.every(f => seen[f.origDriveId] === meta.modifiedTime)) {
+          for (const f of items) nextSeen[f.origDriveId] = meta.modifiedTime;
+          continue;
+        }
         const files = await Crypto.decryptJSON(this.key, await Drive.download(meta.id));
         const lookup = new Map(files.map(f => [f.origDriveId, f]));
         for (const fav of items) {
           const o = lookup.get(fav.origDriveId);
           if (o?.w && o?.h) { fav.w = o.w; fav.h = o.h; filled++; }
+          else nextSeen[fav.origDriveId] = meta.modifiedTime;
         }
-        seen[fid] = meta.modifiedTime;
       } catch (e) { console.warn(`즐겨찾기 크기 보정: 폴더 ${fid} 실패`, e); }
     }
-    try { localStorage.setItem('sg_favdims_seen', JSON.stringify(seen)); } catch {}
+    try { localStorage.setItem('sg_favdims_seen2', JSON.stringify(nextSeen)); localStorage.removeItem('sg_favdims_seen'); } catch {}
     if (filled > 0) {
       await this.saveFavorites();
       console.log(`즐겨찾기 크기 보정: ${filled}개`);
@@ -3684,6 +3728,7 @@ const app = {
       this.favData.push({
         origDriveId: f.origDriveId, thumbDriveId: f.thumbDriveId,
         name: f.name, type: f.type, size: f.size, mtime: f.mtime,
+        ...(f.w && f.h ? { w: f.w, h: f.h } : {}),
         _folderId: f._folderId || this.currentFolderId,
         _folderName: f._folderName || (this.navStack.length ? this.navStack[this.navStack.length - 1].name : '')
       });
